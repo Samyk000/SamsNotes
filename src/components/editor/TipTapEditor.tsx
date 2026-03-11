@@ -4,7 +4,7 @@ import { useCallback, useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
-import Image from '@tiptap/extension-image';
+import { ResizableImage } from './ResizableImage';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import TextAlign from '@tiptap/extension-text-align';
@@ -12,12 +12,50 @@ import Underline from '@tiptap/extension-underline';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import { TextStyle } from '@tiptap/extension-text-style';
+import { Color } from '@tiptap/extension-color';
+import { Highlight } from '@tiptap/extension-highlight';
+import { Extension } from '@tiptap/core';
 import { common, createLowlight } from 'lowlight';
 import { cn } from '@/lib/utils';
 import { RichContent } from '@/types';
 import { Toolbar } from './Toolbar';
 
 const lowlight = createLowlight(common);
+
+// Custom Font Size extension — uses TipTap v3 command pattern
+const FontSize = Extension.create({
+  name: 'fontSize',
+  addOptions() {
+    return { types: ['textStyle'] };
+  },
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          fontSize: {
+            default: null,
+            parseHTML: (element: HTMLElement) => element.style.fontSize || null,
+            renderHTML: (attributes: Record<string, string>) => {
+              if (!attributes.fontSize) return {};
+              return { style: `font-size: ${attributes.fontSize}` };
+            },
+          },
+        },
+      },
+    ];
+  },
+});
+
+function normalizeUrl(url: string): string {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://') && !trimmed.startsWith('mailto:') && !trimmed.startsWith('tel:')) {
+    return `https://${trimmed}`;
+  }
+  return trimmed;
+}
 
 interface TipTapEditorProps {
   content: RichContent | null;
@@ -52,12 +90,7 @@ export function TipTapEditor({
         link: false,
         underline: false,
       }),
-      Image.configure({
-        HTMLAttributes: {
-          class: 'max-w-full h-auto rounded-lg my-4',
-        },
-        inline: false,
-      }),
+      ResizableImage,
       Link.configure({
         openOnClick: true,
         HTMLAttributes: {
@@ -81,6 +114,10 @@ export function TipTapEditor({
           class: 'bg-surface-1 p-4 rounded-lg font-mono text-sm overflow-x-auto my-4',
         },
       }),
+      TextStyle,
+      FontSize,
+      Color,
+      Highlight.configure({ multicolor: true }),
     ],
     content: content || undefined,
     editorProps: {
@@ -127,7 +164,10 @@ export function TipTapEditor({
     const reader = new FileReader();
     reader.onload = (event) => {
       const result = event.target?.result as string;
-      editor?.chain().focus().setImage({ src: result }).run();
+      editor?.chain().focus().insertContent({
+        type: 'image',
+        attrs: { src: result },
+      }).run();
     };
     reader.readAsDataURL(file);
 
@@ -138,7 +178,10 @@ export function TipTapEditor({
   // Handle image URL
   const handleImageUrlSubmit = useCallback(() => {
     if (imageUrl.trim()) {
-      editor?.chain().focus().setImage({ src: imageUrl.trim() }).run();
+      editor?.chain().focus().insertContent({
+        type: 'image',
+        attrs: { src: normalizeUrl(imageUrl) },
+      }).run();
       setImageUrl('');
       setIsImageDialogOpen(false);
     }
@@ -147,7 +190,7 @@ export function TipTapEditor({
   // Handle link
   const handleLinkSubmit = useCallback(() => {
     if (linkUrl.trim()) {
-      editor?.chain().focus().setLink({ href: linkUrl.trim() }).run();
+      editor?.chain().focus().extendMarkRange('link').setLink({ href: normalizeUrl(linkUrl) }).run();
       setLinkUrl('');
       setIsLinkDialogOpen(false);
     }

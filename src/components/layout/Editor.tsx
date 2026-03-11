@@ -46,12 +46,31 @@ export function Editor({ onMoveNote }: EditorProps) {
     }
   }, [isAddingTag]);
 
-  // Update title
+  const [localTitle, setLocalTitle] = useState(selectedNote?.title || '');
+  const titleDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync localTitle when selected note changes (not on every store update)
+  useEffect(() => {
+    setLocalTitle(selectedNote?.title || '');
+  }, [selectedNoteId]); // Only sync when we switch notes, not on every title update
+
+  // Update title with debounce
   const handleTitleChange = useCallback((title: string) => {
-    if (selectedNoteId) {
-      updateNote(selectedNoteId, { title });
-    }
+    setLocalTitle(title); // Instant local update — no lag
+    if (titleDebounceRef.current) clearTimeout(titleDebounceRef.current);
+    titleDebounceRef.current = setTimeout(() => {
+      if (selectedNoteId) {
+        updateNote(selectedNoteId, { title });
+      }
+    }, 400);
   }, [selectedNoteId, updateNote]);
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (titleDebounceRef.current) clearTimeout(titleDebounceRef.current);
+    };
+  }, []);
 
   // Update content
   const handleContentUpdate = useCallback((content: RichContent) => {
@@ -109,7 +128,7 @@ export function Editor({ onMoveNote }: EditorProps) {
   if (!selectedNote) {
     return (
       <div className={cn(
-        'flex-1 flex flex-col bg-app'
+        'flex-1 flex flex-col bg-app h-full overflow-hidden'
       )}>
         <div className="flex-1 flex items-center justify-center">
           <EmptyState
@@ -128,7 +147,7 @@ export function Editor({ onMoveNote }: EditorProps) {
 
   return (
     <div className={cn(
-      'flex-1 flex flex-col bg-app'
+      'flex-1 flex flex-col bg-app h-full overflow-hidden'
     )}>
       {/* Header */}
       <div className="px-6 py-4 border-b border-subtle">
@@ -150,10 +169,10 @@ export function Editor({ onMoveNote }: EditorProps) {
         <input
           ref={titleInputRef}
           type="text"
-          value={selectedNote.title}
+          value={localTitle}
           onChange={(e) => handleTitleChange(e.target.value)}
           onBlur={() => {
-            if (!selectedNote.title.trim()) {
+            if (!localTitle.trim()) {
               handleTitleChange('Untitled Note');
             }
           }}

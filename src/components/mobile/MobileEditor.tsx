@@ -59,12 +59,31 @@ export function MobileEditor({ onMoveNote }: MobileEditorProps) {
     }
   }, [showMenu]);
 
-  // Update title
+  const [localTitle, setLocalTitle] = useState(selectedNote?.title || '');
+  const titleDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync localTitle when selected note changes
+  useEffect(() => {
+    setLocalTitle(selectedNote?.title || '');
+  }, [selectedNoteId]);
+
+  // Update title with debounce
   const handleTitleChange = useCallback((title: string) => {
-    if (selectedNoteId) {
-      updateNote(selectedNoteId, { title });
-    }
+    setLocalTitle(title);
+    if (titleDebounceRef.current) clearTimeout(titleDebounceRef.current);
+    titleDebounceRef.current = setTimeout(() => {
+      if (selectedNoteId) {
+        updateNote(selectedNoteId, { title });
+      }
+    }, 400);
   }, [selectedNoteId, updateNote]);
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (titleDebounceRef.current) clearTimeout(titleDebounceRef.current);
+    };
+  }, []);
 
   // Update content
   const handleContentUpdate = useCallback((content: RichContent) => {
@@ -161,10 +180,10 @@ export function MobileEditor({ onMoveNote }: MobileEditorProps) {
           {/* Title */}
           <input
             type="text"
-            value={selectedNote.title}
+            value={localTitle}
             onChange={(e) => handleTitleChange(e.target.value)}
             onBlur={() => {
-              if (!selectedNote.title.trim()) {
+              if (!localTitle.trim()) {
                 handleTitleChange('Untitled Note');
               }
             }}

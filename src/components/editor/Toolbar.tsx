@@ -21,14 +21,14 @@ import {
   AlignJustify,
   Undo,
   Redo,
-  Heading1,
-  Heading2,
-  Heading3,
-  Type,
   RemoveFormatting,
   ChevronDown,
+  Palette,
+  Highlighter,
 } from 'lucide-react';
 import { useState, useRef, useEffect, useCallback } from 'react';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ToolbarProps {
   editor: Editor;
@@ -46,10 +46,51 @@ interface ToolbarButtonProps {
   title?: string;
 }
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const TEXT_SIZES = [
+  { label: '12', value: '12px' },
+  { label: '14', value: '14px' },
+  { label: '16', value: '16px' },
+  { label: '18', value: '18px' },
+  { label: '20', value: '20px' },
+  { label: '24', value: '24px' },
+  { label: '30', value: '30px' },
+  { label: '36', value: '36px' },
+  { label: '48', value: '48px' },
+  { label: '64', value: '64px' },
+];
+
+const COLORS = [
+  { name: 'Default', value: 'inherit' },
+  { name: 'White', value: '#FFFFFF' },
+  { name: 'Gray', value: '#9CA3AF' },
+  { name: 'Red', value: '#EF4444' },
+  { name: 'Orange', value: '#F97316' },
+  { name: 'Yellow', value: '#F59E0B' },
+  { name: 'Green', value: '#10B981' },
+  { name: 'Blue', value: '#3B82F6' },
+  { name: 'Purple', value: '#8B5CF6' },
+  { name: 'Pink', value: '#EC4899' },
+];
+
+const HIGHLIGHTS = [
+  { name: 'None', value: 'transparent' },
+  { name: 'Yellow', value: '#FEF08A' },
+  { name: 'Green', value: '#BBF7D0' },
+  { name: 'Blue', value: '#BFDBFE' },
+  { name: 'Purple', value: '#E9D5FF' },
+  { name: 'Pink', value: '#FBCFE8' },
+  { name: 'Orange', value: '#FED7AA' },
+];
+
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
 function ToolbarButton({ onClick, isActive, isDisabled, children, title }: ToolbarButtonProps) {
   return (
     <button
       onClick={onClick}
+      onMouseDown={(e) => e.preventDefault()}
       disabled={isDisabled}
       title={title}
       className={cn(
@@ -69,19 +110,11 @@ function ToolbarDivider() {
   return <div className="w-px h-6 bg-subtle mx-1 shrink-0" />;
 }
 
-// Font size options — map display px label → what we apply via inline style
-// TipTap doesn't have a built-in fontSize extension in StarterKit, so we use
-// a custom mark via the FontSize extension OR fall back to heading levels.
-// To avoid requiring a new extension, we use heading levels + paragraph for structure:
-const TEXT_STYLES = [
-  { label: '12',  value: 'xs',    action: 'paragraph',  fontSize: '12px' },
-  { label: '14',  value: 'sm',    action: 'paragraph',  fontSize: '14px' },
-  { label: '16',  value: 'base',  action: 'paragraph',  fontSize: '16px' },
-  { label: '18',  value: 'lg',    action: 'paragraph',  fontSize: '18px' },
-  { label: '20',  value: 'xl',    action: 'heading-3',  fontSize: '20px' },
-  { label: '24',  value: '2xl',   action: 'heading-2',  fontSize: '24px' },
-  { label: '32',  value: '3xl',   action: 'heading-1',  fontSize: '32px' },
-] as const;
+// ─── Dropdown type management ─────────────────────────────────────────────────
+
+type DropdownType = 'size' | 'color' | 'highlight' | 'image' | null;
+
+// ─── Main component ──────────────────────────────────────────────────────────
 
 export function Toolbar({
   editor,
@@ -90,97 +123,116 @@ export function Toolbar({
   onAddLink,
   onRemoveLink,
 }: ToolbarProps) {
-  const [showSizeMenu, setShowSizeMenu] = useState(false);
-  const [showImageMenu, setShowImageMenu] = useState(false);
-  const [sizeMenuPosition, setSizeMenuPosition] = useState({ top: 0, left: 0 });
-  const [imageMenuPosition, setImageMenuPosition] = useState({ top: 0, left: 0 });
+  // Single state for which dropdown is open (only one can be open at a time)
+  const [activeDropdown, setActiveDropdown] = useState<DropdownType>(null);
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
 
+  // Refs for trigger buttons
   const sizeButtonRef = useRef<HTMLButtonElement>(null);
+  const colorButtonRef = useRef<HTMLButtonElement>(null);
+  const highlightButtonRef = useRef<HTMLButtonElement>(null);
   const imageButtonRef = useRef<HTMLButtonElement>(null);
 
-  // Close menus on outside click or Escape
+  // Ref for the active dropdown portal content
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // ── Close on outside click or Escape ──────────────────────────────────────
+
   useEffect(() => {
+    if (!activeDropdown) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setShowSizeMenu(false);
-        setShowImageMenu(false);
+      if (e.key === 'Escape') setActiveDropdown(null);
+    };
+
+    const handleMouseDown = (e: MouseEvent) => {
+      const target = e.target as Node;
+
+      // Don't close if clicking inside the dropdown portal
+      if (dropdownRef.current?.contains(target)) return;
+
+      // Don't close if clicking the trigger button (toggle handles it)
+      const triggerRefs = [sizeButtonRef, colorButtonRef, highlightButtonRef, imageButtonRef];
+      for (const ref of triggerRefs) {
+        if (ref.current?.contains(target)) return;
       }
+
+      setActiveDropdown(null);
     };
-    const handleClickOutside = () => {
-      setShowSizeMenu(false);
-      setShowImageMenu(false);
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleMouseDown);
     };
-    if (showSizeMenu || showImageMenu) {
-      document.addEventListener('keydown', handleKeyDown);
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => {
-        document.removeEventListener('keydown', handleKeyDown);
-        document.removeEventListener('mousedown', handleClickOutside);
-      };
+  }, [activeDropdown]);
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
+
+  const openDropdown = useCallback((type: DropdownType, ref: React.RefObject<HTMLButtonElement | null>) => {
+    if (activeDropdown === type) {
+      setActiveDropdown(null);
+      return;
     }
-  }, [showSizeMenu, showImageMenu]);
-
-  const updateSizeMenuPosition = useCallback(() => {
-    if (sizeButtonRef.current) {
-      const rect = sizeButtonRef.current.getBoundingClientRect();
-      setSizeMenuPosition({ top: rect.bottom + 4, left: rect.left });
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      setMenuPosition({ top: rect.bottom + 4, left: rect.left });
     }
-  }, []);
+    setActiveDropdown(type);
+  }, [activeDropdown]);
 
-  const updateImageMenuPosition = useCallback(() => {
-    if (imageButtonRef.current) {
-      const rect = imageButtonRef.current.getBoundingClientRect();
-      setImageMenuPosition({ top: rect.bottom + 4, left: rect.left });
-    }
-  }, []);
-
-  const handleSizeMenuToggle = () => {
-    if (!showSizeMenu) updateSizeMenuPosition();
-    setShowSizeMenu(!showSizeMenu);
-    setShowImageMenu(false);
-  };
-
-  const handleImageMenuToggle = () => {
-    if (!showImageMenu) updateImageMenuPosition();
-    setShowImageMenu(!showImageMenu);
-    setShowSizeMenu(false);
-  };
-
-  // Get the label of the currently active text size
-  const getCurrentSizeLabel = () => {
+  const getCurrentSizeLabel = useCallback(() => {
+    const attrs = editor.getAttributes('textStyle');
+    if (attrs.fontSize) return attrs.fontSize.replace('px', '');
     if (editor.isActive('heading', { level: 1 })) return '32';
     if (editor.isActive('heading', { level: 2 })) return '24';
     if (editor.isActive('heading', { level: 3 })) return '20';
-    // For paragraph nodes, try to read the inline font-size from DOM selection
-    // We default to 16 for normal paragraph
     return '16';
-  };
+  }, [editor]);
 
-  const applyTextStyle = (style: typeof TEXT_STYLES[number]) => {
-    if (style.action === 'heading-1') {
-      editor.chain().focus().setHeading({ level: 1 }).run();
-    } else if (style.action === 'heading-2') {
-      editor.chain().focus().setHeading({ level: 2 }).run();
-    } else if (style.action === 'heading-3') {
-      editor.chain().focus().setHeading({ level: 3 }).run();
+  // ── Action handlers ───────────────────────────────────────────────────────
+
+  const applyFontSize = useCallback((size: string) => {
+    editor.chain().focus().setMark('textStyle', { fontSize: `${size}px` }).run();
+    setActiveDropdown(null);
+  }, [editor]);
+
+  const applyColor = useCallback((value: string) => {
+    if (value === 'inherit') {
+      editor.chain().focus().unsetColor().run();
     } else {
-      editor.chain().focus().setParagraph().run();
+      editor.chain().focus().setColor(value).run();
     }
-    setShowSizeMenu(false);
-  };
+    setActiveDropdown(null);
+  }, [editor]);
 
-  const isStyleActive = (style: typeof TEXT_STYLES[number]) => {
-    if (style.action === 'heading-1') return editor.isActive('heading', { level: 1 });
-    if (style.action === 'heading-2') return editor.isActive('heading', { level: 2 });
-    if (style.action === 'heading-3') return editor.isActive('heading', { level: 3 });
-    return !editor.isActive('heading') && style.label === getCurrentSizeLabel();
-  };
+  const applyHighlight = useCallback((value: string) => {
+    if (value === 'transparent') {
+      editor.chain().focus().unsetHighlight().run();
+    } else {
+      editor.chain().focus().setHighlight({ color: value }).run();
+    }
+    setActiveDropdown(null);
+  }, [editor]);
+
+  const handleUploadFromDevice = useCallback(() => {
+    onImageUpload();
+    setActiveDropdown(null);
+  }, [onImageUpload]);
+
+  const handleInsertFromUrl = useCallback(() => {
+    onImageUrl();
+    setActiveDropdown(null);
+  }, [onImageUrl]);
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <>
       <div className="sticky top-0 z-10 bg-surface-2 border-b border-subtle px-4 py-2">
         <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-hide flex-wrap gap-y-1">
-          {/* Undo/Redo */}
+          {/* Undo / Redo */}
           <ToolbarButton
             onClick={() => editor.chain().focus().undo().run()}
             isDisabled={!editor.can().undo()}
@@ -198,19 +250,52 @@ export function Toolbar({
 
           <ToolbarDivider />
 
-          {/* Font Size dropdown — replaces old P/H1/H2/H3 label */}
+          {/* Font Size */}
           <button
             ref={sizeButtonRef}
-            onClick={handleSizeMenuToggle}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => openDropdown('size', sizeButtonRef)}
             title="Font size"
             className={cn(
               'flex items-center gap-1 px-2.5 py-1.5 rounded-md text-sm font-mono font-medium transition-colors shrink-0',
               'text-muted-custom hover:text-secondary-custom hover:bg-hover',
-              showSizeMenu && 'bg-hover text-secondary-custom'
+              activeDropdown === 'size' && 'bg-hover text-secondary-custom'
             )}
           >
             <span className="min-w-[20px] text-center">{getCurrentSizeLabel()}</span>
             <ChevronDown className="w-3 h-3" />
+          </button>
+
+          <ToolbarDivider />
+
+          {/* Text Color */}
+          <button
+            ref={colorButtonRef}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => openDropdown('color', colorButtonRef)}
+            title="Text Color"
+            className={cn(
+              'p-2 rounded-md transition-colors shrink-0',
+              'text-muted-custom hover:text-secondary-custom hover:bg-hover',
+              activeDropdown === 'color' && 'bg-selected text-primary-custom'
+            )}
+          >
+            <Palette className="w-4 h-4" />
+          </button>
+
+          {/* Highlight */}
+          <button
+            ref={highlightButtonRef}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => openDropdown('highlight', highlightButtonRef)}
+            title="Highlight"
+            className={cn(
+              'p-2 rounded-md transition-colors shrink-0',
+              'text-muted-custom hover:text-secondary-custom hover:bg-hover',
+              activeDropdown === 'highlight' && 'bg-selected text-primary-custom'
+            )}
+          >
+            <Highlighter className="w-4 h-4" />
           </button>
 
           <ToolbarDivider />
@@ -331,16 +416,17 @@ export function Toolbar({
             <Link className="w-4 h-4" />
           </ToolbarButton>
 
-          {/* Image dropdown */}
+          {/* Image */}
           <button
             ref={imageButtonRef}
-            onClick={handleImageMenuToggle}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => openDropdown('image', imageButtonRef)}
+            title="Insert Image"
             className={cn(
               'flex items-center gap-1 px-2 py-1.5 rounded-md text-sm transition-colors shrink-0',
               'text-muted-custom hover:text-secondary-custom hover:bg-hover',
-              showImageMenu && 'bg-hover text-secondary-custom'
+              activeDropdown === 'image' && 'bg-hover text-secondary-custom'
             )}
-            title="Insert Image"
           >
             <ImageIcon className="w-4 h-4" />
             <ChevronDown className="w-3 h-3" />
@@ -358,57 +444,114 @@ export function Toolbar({
         </div>
       </div>
 
-      {/* Font Size Menu — portalled to body */}
-      {showSizeMenu && createPortal(
+      {/* ── Dropdown Portals ─────────────────────────────────────────────── */}
+
+      {/* Font Size Menu */}
+      {activeDropdown === 'size' && createPortal(
         <div
-          className="fixed z-[9999] min-w-[120px] py-1.5 rounded-xl bg-raised border border-subtle shadow-2xl"
-          style={{ top: sizeMenuPosition.top, left: sizeMenuPosition.left }}
-          onClick={(e) => e.stopPropagation()}
+          ref={dropdownRef}
+          className="fixed z-[9999] min-w-[80px] py-1.5 rounded-xl bg-raised border border-subtle shadow-2xl"
+          style={{ top: menuPosition.top, left: menuPosition.left }}
+          onMouseDown={(e) => e.preventDefault()}
         >
           <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-custom">
             Size
           </div>
-          {TEXT_STYLES.map((style) => (
+          {TEXT_SIZES.map((size) => (
             <button
-              key={style.label}
-              onClick={() => applyTextStyle(style)}
+              key={size.label}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => applyFontSize(size.label)}
               className={cn(
                 'w-full flex items-center justify-between px-3 py-1.5 text-left transition-colors',
-                isStyleActive(style)
+                getCurrentSizeLabel() === size.label
                   ? 'text-primary-custom bg-selected'
                   : 'text-secondary-custom hover:bg-hover'
               )}
             >
-              <span className="font-mono text-sm">{style.label}</span>
-              <span
-                className="text-muted-custom ml-3 flex-1 text-right truncate"
-                style={{ fontSize: style.fontSize, lineHeight: 1 }}
-              >
-                {style.action === 'heading-1' ? 'H1' :
-                 style.action === 'heading-2' ? 'H2' :
-                 style.action === 'heading-3' ? 'H3' : 'Aa'}
-              </span>
+              <span className="font-mono text-sm">{size.label}</span>
             </button>
           ))}
         </div>,
         document.body
       )}
 
-      {/* Image Menu — portalled to body */}
-      {showImageMenu && createPortal(
+      {/* Color Menu */}
+      {activeDropdown === 'color' && createPortal(
         <div
+          ref={dropdownRef}
+          className="fixed z-[9999] min-w-[140px] py-1.5 rounded-xl bg-raised border border-subtle shadow-2xl"
+          style={{ top: menuPosition.top, left: menuPosition.left }}
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-custom">
+            Color
+          </div>
+          <div className="grid grid-cols-5 gap-1 p-2">
+            {COLORS.map((color) => (
+              <button
+                key={color.name}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => applyColor(color.value)}
+                title={color.name}
+                className="w-6 h-6 rounded-md border border-subtle transition-transform hover:scale-110"
+                style={{ backgroundColor: color.value === 'inherit' ? 'transparent' : color.value }}
+              >
+                {color.value === 'inherit' && <RemoveFormatting className="w-3 h-3 mx-auto" />}
+              </button>
+            ))}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Highlight Menu */}
+      {activeDropdown === 'highlight' && createPortal(
+        <div
+          ref={dropdownRef}
+          className="fixed z-[9999] min-w-[140px] py-1.5 rounded-xl bg-raised border border-subtle shadow-2xl"
+          style={{ top: menuPosition.top, left: menuPosition.left }}
+          onMouseDown={(e) => e.preventDefault()}
+        >
+          <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-custom">
+            Highlight
+          </div>
+          <div className="grid grid-cols-5 gap-1 p-2">
+            {HIGHLIGHTS.map((color) => (
+              <button
+                key={color.name}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => applyHighlight(color.value)}
+                title={color.name}
+                className="w-6 h-6 rounded-md border border-subtle transition-transform hover:scale-110"
+                style={{ backgroundColor: color.value }}
+              >
+                {color.value === 'transparent' && <RemoveFormatting className="w-3 h-3 mx-auto" />}
+              </button>
+            ))}
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Image Menu */}
+      {activeDropdown === 'image' && createPortal(
+        <div
+          ref={dropdownRef}
           className="fixed z-[9999] min-w-[160px] py-1 rounded-lg bg-raised border border-subtle shadow-2xl"
-          style={{ top: imageMenuPosition.top, left: imageMenuPosition.left }}
-          onClick={(e) => e.stopPropagation()}
+          style={{ top: menuPosition.top, left: menuPosition.left }}
+          onMouseDown={(e) => e.preventDefault()}
         >
           <button
-            onClick={() => { onImageUpload(); setShowImageMenu(false); }}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={handleUploadFromDevice}
             className="w-full px-3 py-2 text-left text-sm text-secondary-custom hover:bg-hover transition-colors flex items-center gap-2"
           >
             Upload from device
           </button>
           <button
-            onClick={() => { onImageUrl(); setShowImageMenu(false); }}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={handleInsertFromUrl}
             className="w-full px-3 py-2 text-left text-sm text-secondary-custom hover:bg-hover transition-colors flex items-center gap-2"
           >
             Insert from URL

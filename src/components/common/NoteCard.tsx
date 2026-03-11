@@ -28,6 +28,8 @@ export function NoteCard({
   const [menuPosition, setMenuPosition] = useState<'bottom' | 'top'>('bottom');
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isLongPressActive = useRef(false);
 
   const relativeTime = formatDistanceToNow(note.updatedAt, { addSuffix: true });
   const previewText = note.plainText.slice(0, 100) || 'No content';
@@ -54,11 +56,64 @@ export function NoteCard({
     setShowMenu(!showMenu);
   };
 
+  // Mobile Long Press Logic
+  const handleTouchStart = () => {
+    isLongPressActive.current = false;
+    longPressTimerRef.current = setTimeout(() => {
+      isLongPressActive.current = true;
+      if (typeof navigator !== 'undefined' && navigator.vibrate) {
+        navigator.vibrate(50); // Haptic feedback
+      }
+      handleMenuToggle();
+    }, 600); // 600ms for long press
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent | React.MouseEvent) => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    if (isLongPressActive.current) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  };
+
+  const handleTouchMove = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+  };
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+    };
+  }, []);
+
   return (
     <div
-      onClick={onClick}
+      onClick={(e) => {
+        if (isLongPressActive.current) {
+          isLongPressActive.current = false;
+          return;
+        }
+        onClick();
+      }}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        handleMenuToggle();
+      }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      onTouchMove={handleTouchMove}
+      onMouseDown={handleTouchStart}
+      onMouseUp={handleTouchEnd}
+      onMouseMove={handleTouchMove}
       className={cn(
-        'group relative p-4 rounded-lg cursor-pointer transition-all duration-100',
+        'group relative p-4 rounded-lg cursor-pointer transition-all duration-100 select-none touch-none',
         'border',
         isActive 
           ? 'bg-selected border-border-strong' 
