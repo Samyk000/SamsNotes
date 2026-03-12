@@ -8,6 +8,7 @@ import { Folder, Note, SortOption, FilterOption, AppState, RichContent } from '@
 import { foldersDB, notesDB, settingsDB, seedInitialData, dataDB } from '@/lib/db';
 import { nanoid } from 'nanoid';
 import { MAX_FOLDER_NAME_LENGTH } from '@/lib/constants';
+import { toast } from 'sonner';
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -32,18 +33,6 @@ function filterNotes(notes: Note[], filterBy: string): Note[] {
   }
 }
 
-/** Extract plain text from ProseMirror/TipTap JSON for search indexing. */
-function extractPlainText(content: RichContent | null): string {
-  if (!content) return '';
-  const parts: string[] = [];
-  function walk(node: RichContent) {
-    if (node.text) parts.push(node.text);
-    node.content?.forEach(walk);
-  }
-  walk(content);
-  return parts.join(' ').replace(/\s+/g, ' ').trim();
-}
-
 // ── Store interface ───────────────────────────────────────────
 
 interface Store extends AppState {
@@ -60,7 +49,7 @@ interface Store extends AppState {
   selectNote: (id: string | null) => void;
   createNote: () => Promise<Note | null>;
   updateNote: (id: string, data: Partial<Note>) => Promise<void>;
-  updateNoteContent: (id: string, content: RichContent | null) => Promise<void>;
+  updateNoteContent: (id: string, content: RichContent | null, plainText: string) => Promise<void>;
   deleteNote: (id: string) => Promise<Note | null>;
   duplicateNote: (id: string) => Promise<Note | null>;
   moveNote: (noteId: string, folderId: string) => Promise<boolean>;
@@ -238,12 +227,13 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   updateNote: async (id, data) => {
+    const { notes } = get();
+    const existing = notes.find((n) => n.id === id);
+    if (!existing) return;
+
     set({ saveState: 'saving' });
+    const updated: Note = { ...existing, ...data, updatedAt: Date.now() };
     try {
-      const { notes } = get();
-      const existing = notes.find((n) => n.id === id);
-      if (!existing) { set({ saveState: 'error' }); return; }
-      const updated: Note = { ...existing, ...data, updatedAt: Date.now() };
       await notesDB.put(updated);
       set((state) => ({
         notes: state.notes.map((n) => (n.id === id ? updated : n)),
@@ -251,17 +241,18 @@ export const useStore = create<Store>((set, get) => ({
       }));
     } catch {
       set({ saveState: 'error' });
+      toast.error('Failed to save changes. Your browser storage might be full.');
     }
   },
 
-  updateNoteContent: async (id, content) => {
+  updateNoteContent: async (id, content, plainText) => {
+    const { notes } = get();
+    const existing = notes.find((n) => n.id === id);
+    if (!existing) return;
+
     set({ saveState: 'saving' });
+    const updated: Note = { ...existing, content, plainText, updatedAt: Date.now() };
     try {
-      const { notes } = get();
-      const existing = notes.find((n) => n.id === id);
-      if (!existing) { set({ saveState: 'error' }); return; }
-      const plainText = extractPlainText(content);
-      const updated: Note = { ...existing, content, plainText, updatedAt: Date.now() };
       await notesDB.put(updated);
       set((state) => ({
         notes: state.notes.map((n) => (n.id === id ? updated : n)),
@@ -269,6 +260,7 @@ export const useStore = create<Store>((set, get) => ({
       }));
     } catch {
       set({ saveState: 'error' });
+      toast.error('Failed to save changes. Your browser storage might be full.');
     }
   },
 
@@ -299,11 +291,22 @@ export const useStore = create<Store>((set, get) => ({
     const source = notes.find((n) => n.id === id);
     if (!source) return null;
 
+    // Smart copy suffix: "Title" → "Title (copy)", "Title (copy)" → "Title (copy 2)"
+    const copyPattern = / \(copy(?: (\d+))?\)$/;
+    const match = source.title.match(copyPattern);
+    let newTitle: string;
+    if (match) {
+      const num = match[1] ? parseInt(match[1], 10) + 1 : 2;
+      newTitle = source.title.replace(copyPattern, ` (copy ${num})`);
+    } else {
+      newTitle = `${source.title} (copy)`;
+    }
+
     const now = Date.now();
     const dup: Note = {
       ...source,
       id: nanoid(),
-      title: `${source.title} (copy)`,
+      title: newTitle,
       createdAt: now,
       updatedAt: now,
     };

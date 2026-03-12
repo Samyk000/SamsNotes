@@ -110,7 +110,7 @@ export const settingsDB = {
   async get(): Promise<Settings> {
     const db = await getDB();
     const row = await db.get(STORE_SETTINGS, 'settings');
-    return row ? (row as { key: string } & Settings) : { reducedMotion: false };
+    return row ? (row as { key: string } & Settings) : { reducedMotion: false, theme: 'dark' };
   },
 
   async update(patch: Partial<Settings>): Promise<void> {

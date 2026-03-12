@@ -86,9 +86,9 @@ export function MobileEditor({ onMoveNote }: MobileEditorProps) {
   }, []);
 
   // Update content
-  const handleContentUpdate = useCallback((content: RichContent) => {
+  const handleContentUpdate = useCallback((content: RichContent, plainText: string) => {
     if (selectedNoteId) {
-      updateNoteContent(selectedNoteId, content);
+      updateNoteContent(selectedNoteId, content, plainText);
     }
   }, [selectedNoteId, updateNoteContent]);
 

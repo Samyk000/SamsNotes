@@ -176,6 +176,11 @@ export function Sidebar({ onOpenSettings }: SidebarProps) {
     setConfirmDeleteFolder(null);
   };
 
+  // Dynamic dialog description based on whether the folder has notes
+  const deleteFolderNoteCount = confirmDeleteFolder
+    ? useStore.getState().notes.filter(n => n.folderId === confirmDeleteFolder.id).length
+    : 0;
+
   return (
     <div className="flex flex-col h-full bg-surface-1 border-r border-subtle">
       {/* Logo */}
@@ -364,7 +369,11 @@ export function Sidebar({ onOpenSettings }: SidebarProps) {
         open={!!confirmDeleteFolder}
         onOpenChange={(open) => { if (!open) setConfirmDeleteFolder(null); }}
         title="Delete Folder"
-        description={`"${confirmDeleteFolder?.name}" will be deleted. Notes inside will be moved to My Notes.`}
+        description={
+          deleteFolderNoteCount > 0
+            ? `"${confirmDeleteFolder?.name}" will be deleted. ${deleteFolderNoteCount} note${deleteFolderNoteCount > 1 ? 's' : ''} inside will be moved to My Notes.`
+            : `"${confirmDeleteFolder?.name}" will be permanently deleted.`
+        }
         confirmLabel="Delete Folder"
         isDestructive
         onConfirm={handleDeleteConfirmed}

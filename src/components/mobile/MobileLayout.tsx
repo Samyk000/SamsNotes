@@ -8,7 +8,9 @@ import { MobileNoteList } from './MobileNoteList';
 import { MobileEditor } from './MobileEditor';
 import { SettingsDialog } from '@/components/dialogs/SettingsDialog';
 import { MoveNoteDialog } from '@/components/dialogs/MoveNoteDialog';
-import { Search, Settings, Menu, X } from 'lucide-react';
+import { Search, Settings, X } from 'lucide-react';
+import { SaveIndicator } from '@/components/common/SaveIndicator';
+import { formatDistanceToNow } from 'date-fns';
 
 export function MobileLayout() {
   const {
@@ -18,6 +20,8 @@ export function MobileLayout() {
     searchQuery,
     setSearchQuery,
     isInitialized,
+    notes,
+    saveState,
   } = useStore();
 
   const [showSearch, setShowSearch] = useState(false);
@@ -63,8 +67,21 @@ export function MobileLayout() {
               >
                 <X className="w-5 h-5" />
               </button>
-              <Logo size="sm" />
-              <div className="w-9" /> {/* Spacer */}
+              {/* Metadata instead of logo */}
+              <div className="flex items-center gap-3">
+                {(() => {
+                  const note = notes.find(n => n.id === selectedNoteId);
+                  if (!note) return null;
+                  return (
+                    <>
+                      <span className="text-xs text-muted-custom">
+                        {formatDistanceToNow(note.updatedAt, { addSuffix: true })}
+                      </span>
+                      <SaveIndicator state={saveState} />
+                    </>
+                  );
+                })()}
+              </div>
             </>
           ) : (
             <>

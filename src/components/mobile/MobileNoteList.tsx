@@ -8,7 +8,8 @@ import { NoteCard } from '@/components/common/NoteCard';
 import { EmptyState } from '@/components/common/EmptyState';
 import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
 import { toast } from 'sonner';
-import { Plus, ChevronDown, Filter, ArrowUpDown, X } from 'lucide-react';
+import { Plus, ChevronDown, Filter, ArrowUpDown, X, Folder as FolderIcon, Check } from 'lucide-react';
+import { MAX_FOLDER_NAME_LENGTH } from '@/lib/constants';
 
 interface MobileNoteListProps {
   onSelectNote: () => void;
@@ -33,6 +34,7 @@ export function MobileNoteList({ onSelectNote, onCreateNote, onMoveNote }: Mobil
     setFilterBy,
     setTagFilter,
     selectFolder,
+    createFolder,
     getFilteredNotes,
   } = useStore();
 
@@ -40,6 +42,9 @@ export function MobileNoteList({ onSelectNote, onCreateNote, onMoveNote }: Mobil
   const [showSortSheet, setShowSortSheet] = useState(false);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [confirmDeleteNote, setConfirmDeleteNote] = useState<Note | null>(null);
+  const [isCreatingFolder, setIsCreatingFolder] = useState(false);
+  const [newFolderName, setNewFolderName] = useState('');
+  const [newFolderError, setNewFolderError] = useState('');
 
   const notes = getFilteredNotes();
   const activeFolder = folders.find(f => f.id === selectedFolderId);
@@ -211,6 +216,53 @@ export function MobileNoteList({ onSelectNote, onCreateNote, onMoveNote }: Mobil
                 <span>{folder.name}</span>
               </button>
             ))}
+
+            {/* Create folder inline */}
+            <div className="px-4 pt-2 border-t border-subtle mt-1">
+              {isCreatingFolder ? (
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <FolderIcon className="w-4 h-4 text-muted-custom shrink-0" />
+                    <input
+                      autoFocus
+                      type="text"
+                      value={newFolderName}
+                      onChange={(e) => { setNewFolderName(e.target.value); setNewFolderError(''); }}
+                      onKeyDown={async (e) => {
+                        if (e.key === 'Enter') {
+                          const trimmed = newFolderName.trim();
+                          if (!trimmed) { setIsCreatingFolder(false); return; }
+                          if (trimmed.length > MAX_FOLDER_NAME_LENGTH) { setNewFolderError(`Max ${MAX_FOLDER_NAME_LENGTH} chars`); return; }
+                          const result = await createFolder(trimmed);
+                          if (result) {
+                            selectFolder(result.id);
+                            setShowFolderSheet(false);
+                            setIsCreatingFolder(false);
+                            setNewFolderName('');
+                          } else {
+                            setNewFolderError('Name already exists');
+                          }
+                        }
+                        if (e.key === 'Escape') { setIsCreatingFolder(false); setNewFolderName(''); setNewFolderError(''); }
+                      }}
+                      onBlur={() => { setIsCreatingFolder(false); setNewFolderName(''); setNewFolderError(''); }}
+                      placeholder="Folder name"
+                      maxLength={MAX_FOLDER_NAME_LENGTH}
+                      className="flex-1 bg-transparent text-sm text-primary-custom placeholder:text-muted-custom focus:outline-none"
+                    />
+                  </div>
+                  {newFolderError && <p className="text-xs text-accent-error pl-6">{newFolderError}</p>}
+                </div>
+              ) : (
+                <button
+                  onClick={() => setIsCreatingFolder(true)}
+                  className="w-full flex items-center gap-3 py-3 text-left text-sm text-muted-custom hover:text-secondary-custom transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Create folder</span>
+                </button>
+              )}
+            </div>
           </div>
         </BottomSheet>
       )}

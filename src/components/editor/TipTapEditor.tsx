@@ -59,7 +59,7 @@ function normalizeUrl(url: string): string {
 
 interface TipTapEditorProps {
   content: RichContent | null;
-  onUpdate: (content: RichContent) => void;
+  onUpdate: (content: RichContent, plainText: string) => void;
   saveState: 'saved' | 'saving' | 'error';
   placeholder?: string;
   className?: string;
@@ -135,7 +135,8 @@ export function TipTapEditor({
     },
     onUpdate: ({ editor }) => {
       const json = editor.getJSON() as RichContent;
-      onUpdate(json);
+      const plainText = editor.getText();
+      onUpdate(json, plainText);
     },
     immediatelyRender: false,
   });

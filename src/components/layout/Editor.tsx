@@ -73,9 +73,9 @@ export function Editor({ onMoveNote }: EditorProps) {
   }, []);
 
   // Update content
-  const handleContentUpdate = useCallback((content: RichContent) => {
+  const handleContentUpdate = useCallback((content: RichContent, plainText: string) => {
     if (selectedNoteId) {
-      updateNoteContent(selectedNoteId, content);
+      updateNoteContent(selectedNoteId, content, plainText);
     }
   }, [selectedNoteId, updateNoteContent]);
 
@@ -150,19 +150,39 @@ export function Editor({ onMoveNote }: EditorProps) {
       'flex-1 flex flex-col bg-app h-full overflow-hidden'
     )}>
       {/* Header */}
-      <div className="px-6 py-4 border-b border-subtle">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-xs text-muted-custom mb-3">
-          <button
-            onClick={() => selectedFolder?.id && selectFolder(selectedFolder.id)}
-            className="hover:text-secondary-custom transition-colors"
-          >
-            {selectedFolder?.name || 'Notes'}
-          </button>
-          <ChevronRight className="w-3 h-3" />
-          <span className="text-secondary-custom truncate max-w-[200px]">
-            {selectedNote.title || 'Untitled Note'}
-          </span>
+      <div className="px-6 py-4 border-b border-subtle shrink-0">
+        {/* Top row: Breadcrumb (left) + Metadata (right) */}
+        <div className="flex items-center justify-between gap-4 mb-2">
+          {/* Breadcrumb */}
+          <div className="flex items-center gap-2 text-xs text-muted-custom min-w-0">
+            <button
+              onClick={() => selectedFolder?.id && selectFolder(selectedFolder.id)}
+              className="hover:text-secondary-custom transition-colors shrink-0"
+            >
+              {selectedFolder?.name || 'Notes'}
+            </button>
+            <ChevronRight className="w-3 h-3 shrink-0" />
+            <span className="text-secondary-custom truncate">
+              {selectedNote.title || 'Untitled Note'}
+            </span>
+          </div>
+
+          {/* Metadata */}
+          <div className="flex items-center gap-4 shrink-0">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-custom">Modified</span>
+              <span className="text-xs text-secondary-custom" title={fullModifiedDate}>
+                {formattedModifiedDate}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-muted-custom">Created</span>
+              <span className="text-xs text-secondary-custom">
+                {formattedCreatedDate}
+              </span>
+            </div>
+            <SaveIndicator state={saveState} />
+          </div>
         </div>
 
         {/* Title */}
@@ -184,87 +204,59 @@ export function Editor({ onMoveNote }: EditorProps) {
           )}
         />
 
-        {/* Meta row */}
-        <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
-          {/* Left: Metadata */}
-          <div className="flex items-center gap-4">
-            {/* Modified date */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-custom">Modified</span>
-              <span 
-                className="text-xs text-secondary-custom"
-                title={fullModifiedDate}
-              >
-                {formattedModifiedDate}
-              </span>
-            </div>
-
-            {/* Created date */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-custom">Created</span>
-              <span className="text-xs text-secondary-custom">
-                {formattedCreatedDate}
-              </span>
-            </div>
-
-            {/* Save indicator */}
-            <SaveIndicator state={saveState} />
-          </div>
-
-          {/* Right: Tags */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {selectedNote.tags.map(tag => (
-              <TagChip
-                key={tag}
-                tag={tag}
-                size="md"
-                isRemovable
-                onRemove={() => handleRemoveTag(tag)}
-                onClick={() => handleTagClick(tag)}
-              />
-            ))}
-            
-            {/* Add tag input */}
-            {isAddingTag ? (
-              <input
-                ref={tagInputRef}
-                type="text"
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                onBlur={handleAddTag}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleAddTag();
-                  if (e.key === 'Escape') {
-                    setIsAddingTag(false);
-                    setNewTag('');
-                  }
-                  if (e.key === ',') {
-                    e.preventDefault();
-                    handleAddTag();
-                  }
-                }}
-                placeholder="Tag name"
-                className={cn(
-                  'w-24 h-7 px-2 rounded-md text-xs',
-                  'bg-chip-inactive-fill border border-chip-inactive-border',
-                  'text-secondary-custom placeholder:text-muted-custom',
-                  'focus:outline-none focus:border-border-focus'
-                )}
-              />
-            ) : (
-              <button
-                onClick={() => setIsAddingTag(true)}
-                className={cn(
-                  'flex items-center gap-1 px-2 py-1 rounded-md',
-                  'text-xs text-muted-custom hover:text-secondary-custom',
-                  'hover:bg-hover transition-colors'
-                )}
-              >
-                <Plus className="w-3 h-3" />
-                <span>Add tag</span>
-              </button>
-            )}
-          </div>
+        {/* Tags row */}
+        <div className="flex items-center gap-2 flex-wrap mt-2">
+          {selectedNote.tags.map(tag => (
+            <TagChip
+              key={tag}
+              tag={tag}
+              size="md"
+              isRemovable
+              onRemove={() => handleRemoveTag(tag)}
+              onClick={() => handleTagClick(tag)}
+            />
+          ))}
+          
+          {/* Add tag input */}
+          {isAddingTag ? (
+            <input
+              ref={tagInputRef}
+              type="text"
+              value={newTag}
+              onChange={(e) => setNewTag(e.target.value)}
+              onBlur={handleAddTag}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleAddTag();
+                if (e.key === 'Escape') {
+                  setIsAddingTag(false);
+                  setNewTag('');
+                }
+                if (e.key === ',') {
+                  e.preventDefault();
+                  handleAddTag();
+                }
+              }}
+              placeholder="Tag name"
+              className={cn(
+                'w-24 h-7 px-2 rounded-md text-xs',
+                'bg-chip-inactive-fill border border-chip-inactive-border',
+                'text-secondary-custom placeholder:text-muted-custom',
+                'focus:outline-none focus:border-border-focus'
+              )}
+            />
+          ) : (
+            <button
+              onClick={() => setIsAddingTag(true)}
+              className={cn(
+                'flex items-center gap-1 px-2 py-1 rounded-md',
+                'text-xs text-muted-custom hover:text-secondary-custom',
+                'hover:bg-hover transition-colors'
+              )}
+            >
+              <Plus className="w-3 h-3" />
+              <span>Add tag</span>
+            </button>
+          )}
         </div>
       </div>
 

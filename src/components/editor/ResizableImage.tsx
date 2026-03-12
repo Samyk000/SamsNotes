@@ -4,13 +4,13 @@ import { Node, mergeAttributes } from '@tiptap/core';
 import { NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react';
 import type { ReactNodeViewProps } from '@tiptap/react';
 import { useCallback, useRef, useState } from 'react';
-import { Trash2, GripVertical } from 'lucide-react';
+import { Trash2, GripVertical, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // ─── NodeView Component ───────────────────────────────────────────────────────
 
 function ResizableImageView({ node, updateAttributes, deleteNode, selected }: ReactNodeViewProps) {
-  const { src, alt, title, width } = node.attrs;
+  const { src, alt, title, width, float } = node.attrs;
   const containerRef = useRef<HTMLDivElement>(null);
   const [isResizing, setIsResizing] = useState(false);
 
@@ -43,9 +43,28 @@ function ResizableImageView({ node, updateAttributes, deleteNode, selected }: Re
 
   if (!src) return null;
 
+  // Alignment/float styles
+  const wrapperStyle: React.CSSProperties = {};
+  let wrapperClass = 'relative group my-4';
+  if (float === 'left') {
+    wrapperStyle.float = 'left';
+    wrapperStyle.marginRight = '1em';
+    wrapperStyle.marginBottom = '0.5em';
+    wrapperClass = 'relative group my-2';
+  } else if (float === 'right') {
+    wrapperStyle.float = 'right';
+    wrapperStyle.marginLeft = '1em';
+    wrapperStyle.marginBottom = '0.5em';
+    wrapperClass = 'relative group my-2';
+  } else if (float === 'center') {
+    wrapperStyle.display = 'flex';
+    wrapperStyle.justifyContent = 'center';
+  }
+
   return (
     <NodeViewWrapper
-      className="relative group my-4"
+      className={wrapperClass}
+      style={wrapperStyle}
       data-drag-handle
     >
       <div
@@ -99,6 +118,38 @@ function ResizableImageView({ node, updateAttributes, deleteNode, selected }: Re
             'opacity-0 group-hover:opacity-100 transition-opacity'
           )}
         >
+          {/* Alignment buttons */}
+          <button
+            onClick={() => updateAttributes({ float: float === 'left' ? null : 'left' })}
+            className={cn(
+              'p-1.5 rounded-md backdrop-blur-sm transition-colors',
+              float === 'left' ? 'bg-white/30 text-white' : 'bg-black/60 text-white/80 hover:text-white'
+            )}
+            title="Float left"
+          >
+            <AlignLeft className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => updateAttributes({ float: float === 'center' ? null : 'center' })}
+            className={cn(
+              'p-1.5 rounded-md backdrop-blur-sm transition-colors',
+              float === 'center' ? 'bg-white/30 text-white' : 'bg-black/60 text-white/80 hover:text-white'
+            )}
+            title="Center"
+          >
+            <AlignCenter className="w-3.5 h-3.5" />
+          </button>
+          <button
+            onClick={() => updateAttributes({ float: float === 'right' ? null : 'right' })}
+            className={cn(
+              'p-1.5 rounded-md backdrop-blur-sm transition-colors',
+              float === 'right' ? 'bg-white/30 text-white' : 'bg-black/60 text-white/80 hover:text-white'
+            )}
+            title="Float right"
+          >
+            <AlignRight className="w-3.5 h-3.5" />
+          </button>
+
           {/* Drag handle */}
           <div
             data-drag-handle
@@ -136,6 +187,7 @@ export const ResizableImage = Node.create({
       alt: { default: null },
       title: { default: null },
       width: { default: null },
+      float: { default: null },
     };
   },
 
