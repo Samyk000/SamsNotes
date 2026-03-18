@@ -130,7 +130,20 @@ async function hasSeeded(): Promise<boolean> {
 }
 
 export async function seedInitialData(): Promise<void> {
-  if (await hasSeeded()) return;
+  if (await hasSeeded()) {
+    // Migration: Ensure new system folders (like 'whiteboard') are added to existing DBs
+    const existing = await foldersDB.getAll();
+    const missing = DEFAULT_FOLDERS.filter(df => !existing.some(f => f.id === df.id));
+    if (missing.length > 0) {
+      const db = await getDB();
+      const tx = db.transaction(STORE_FOLDERS, 'readwrite');
+      await Promise.all([
+        ...missing.map(f => tx.store.put(f)),
+        tx.done,
+      ]);
+    }
+    return;
+  }
 
   const db = await getDB();
 

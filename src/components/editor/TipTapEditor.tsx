@@ -219,21 +219,32 @@ export function TipTapEditor({
 
   return (
     <div className={cn('flex flex-col h-full', className)}>
-      {/* Toolbar */}
+      {/* Desktop Toolbar (Hidden on Mobile) */}
       <Toolbar
         editor={editor}
         onImageUpload={handleImageUpload}
         onImageUrl={() => setIsImageDialogOpen(true)}
         onAddLink={() => setIsLinkDialogOpen(true)}
         onRemoveLink={unsetLink}
+        className="hidden md:flex sticky top-0 z-10"
       />
 
       {/* Editor area */}
       <div className="flex-1 overflow-y-auto">
-        <div className="px-10 py-6 pb-32">
+        <div className="px-4 xl:px-10 py-6 pb-24 md:pb-32 max-w-4xl mx-auto">
           <EditorContent editor={editor} />
         </div>
       </div>
+
+      {/* Mobile Toolbar (Hidden on Desktop) */}
+      <Toolbar
+        editor={editor}
+        onImageUpload={handleImageUpload}
+        onImageUrl={() => setIsImageDialogOpen(true)}
+        onAddLink={() => setIsLinkDialogOpen(true)}
+        onRemoveLink={unsetLink}
+        className="md:hidden mt-auto border-t border-b-0 border-subtle safe-area-bottom"
+      />
 
       {/* Hidden file input for image upload */}
       <input

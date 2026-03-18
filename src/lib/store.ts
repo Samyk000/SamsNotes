@@ -49,7 +49,7 @@ interface Store extends AppState {
   selectNote: (id: string | null) => void;
   createNote: () => Promise<Note | null>;
   updateNote: (id: string, data: Partial<Note>) => Promise<void>;
-  updateNoteContent: (id: string, content: RichContent | null, plainText: string) => Promise<void>;
+  updateNoteContent: (id: string, content: any | null, plainText: string) => Promise<void>;
   deleteNote: (id: string) => Promise<Note | null>;
   duplicateNote: (id: string) => Promise<Note | null>;
   moveNote: (noteId: string, folderId: string) => Promise<boolean>;
@@ -210,10 +210,15 @@ export const useStore = create<Store>((set, get) => ({
     if (searchQuery) set({ searchQuery: '' });
 
     const now = Date.now();
+    let defaultViewType: typeof notes[0]['viewType'] = 'doc';
+    if (selectedFolderId === 'to-do') defaultViewType = 'todo';
+    if (selectedFolderId === 'whiteboard') defaultViewType = 'canvas';
+
     const note: Note = {
       id: nanoid(),
       folderId: selectedFolderId,
       title: '',
+      viewType: defaultViewType,
       content: null,
       plainText: '',
       tags: [],

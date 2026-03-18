@@ -179,7 +179,7 @@ export function MobileNoteList({ onSelectNote, onCreateNote, onMoveNote }: Mobil
       <button
         onClick={handleCreateNote}
         className={cn(
-          'fixed right-4 bottom-20 w-14 h-14 rounded-full',
+          'fixed right-5 bottom-6 w-14 h-14 rounded-full z-30',
           'bg-raised border border-subtle',
           'flex items-center justify-center',
           'text-secondary-custom shadow-lg',

@@ -5,11 +5,11 @@ import { cn } from '@/lib/utils';
 import { useStore } from '@/lib/store';
 import { RichContent } from '@/types';
 import { TipTapEditor } from '@/components/editor/TipTapEditor';
+import { WhiteboardView } from '@/components/editor/WhiteboardView';
+import { TodoView } from '@/components/editor/TodoView';
 import { TagChip } from '@/components/common/TagChip';
-import { SaveIndicator } from '@/components/common/SaveIndicator';
 import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
 import { toast } from 'sonner';
-import { formatDistanceToNow, format } from 'date-fns';
 import { Plus, MoreHorizontal, Trash2, Copy, Move } from 'lucide-react';
 
 interface MobileEditorProps {
@@ -86,7 +86,7 @@ export function MobileEditor({ onMoveNote }: MobileEditorProps) {
   }, []);
 
   // Update content
-  const handleContentUpdate = useCallback((content: RichContent, plainText: string) => {
+  const handleContentUpdate = useCallback((content: any, plainText: string) => {
     if (selectedNoteId) {
       updateNoteContent(selectedNoteId, content, plainText);
     }
@@ -170,7 +170,6 @@ export function MobileEditor({ onMoveNote }: MobileEditorProps) {
     );
   }
 
-  const relativeTime = formatDistanceToNow(selectedNote.updatedAt, { addSuffix: true });
 
   return (
     <div className="flex flex-col h-full">
@@ -233,15 +232,7 @@ export function MobileEditor({ onMoveNote }: MobileEditorProps) {
           </div>
         </div>
 
-        {/* Meta row */}
-        <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
-          <div className="flex items-center gap-3">
-            <span className="text-xs text-muted-custom">
-              {relativeTime}
-            </span>
-            <SaveIndicator state={saveState} />
-          </div>
-        </div>
+
 
         {/* Tags */}
         <div className="flex items-center gap-2 mt-2 flex-wrap">
@@ -293,15 +284,31 @@ export function MobileEditor({ onMoveNote }: MobileEditorProps) {
         </div>
       </div>
 
-      {/* Editor */}
-      <div className="flex-1 overflow-hidden">
-        <TipTapEditor
-          content={selectedNote.content}
-          onUpdate={handleContentUpdate}
-          saveState={saveState}
-          placeholder="Start writing..."
-          className="h-full"
-        />
+      {/* Editor Content */}
+      <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+        {selectedNote.viewType === 'canvas' ? (
+          <div className="flex-1 min-h-0 w-full relative">
+            <WhiteboardView
+              content={selectedNote.content}
+              onUpdate={handleContentUpdate}
+              saveState={saveState}
+            />
+          </div>
+        ) : selectedNote.viewType === 'todo' ? (
+          <TodoView
+            content={selectedNote.content}
+            onUpdate={handleContentUpdate}
+            saveState={saveState}
+          />
+        ) : (
+          <TipTapEditor
+            content={selectedNote.content}
+            onUpdate={handleContentUpdate}
+            saveState={saveState}
+            placeholder="Start writing..."
+            className="h-full"
+          />
+        )}
       </div>
       {/* Confirm Delete */}
       <ConfirmDialog

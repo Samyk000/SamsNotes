@@ -13,9 +13,10 @@ const now = Date.now();
 export const DEFAULT_FOLDERS: Folder[] = [
   { id: 'my-notes',      name: 'My Notes',     type: 'system', icon: 'FileText',    order: 0, createdAt: now, updatedAt: now },
   { id: 'to-do',         name: 'To-do List',   type: 'system', icon: 'CheckSquare', order: 1, createdAt: now, updatedAt: now },
-  { id: 'projects',      name: 'Projects',     type: 'system', icon: 'FolderKanban', order: 2, createdAt: now, updatedAt: now },
-  { id: 'journal',       name: 'Journal',      type: 'system', icon: 'BookOpen',    order: 3, createdAt: now, updatedAt: now },
-  { id: 'reading-list',  name: 'Reading List', type: 'system', icon: 'Bookmark',    order: 4, createdAt: now, updatedAt: now },
+  { id: 'whiteboard',    name: 'Whiteboard',   type: 'system', icon: 'PenTool',     order: 2, createdAt: now, updatedAt: now },
+  { id: 'projects',      name: 'Projects',     type: 'system', icon: 'FolderKanban', order: 3, createdAt: now, updatedAt: now },
+  { id: 'journal',       name: 'Journal',      type: 'system', icon: 'BookOpen',    order: 4, createdAt: now, updatedAt: now },
+  { id: 'reading-list',  name: 'Reading List', type: 'system', icon: 'Bookmark',    order: 5, createdAt: now, updatedAt: now },
 ];
 
 // Demo notes shown to first-time users
@@ -23,6 +24,7 @@ export const DEMO_NOTES: Note[] = [
   {
     id: 'demo-1',
     folderId: 'my-notes',
+    viewType: 'doc',
     title: 'Welcome to SamsNotes',
     content: {
       type: 'doc',
@@ -69,29 +71,29 @@ export const DEMO_NOTES: Note[] = [
   {
     id: 'demo-2',
     folderId: 'to-do',
+    viewType: 'todo',
     title: 'Sample To-do List',
-    content: {
-      type: 'doc',
-      content: [
-        {
-          type: 'paragraph',
-          content: [{ type: 'text', text: "Here's how checklists work in SamsNotes:" }],
-        },
-        {
-          type: 'taskList',
-          content: [
-            { type: 'taskItem', attrs: { checked: true },  content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Explore the sidebar and folders' }] }] },
-            { type: 'taskItem', attrs: { checked: false }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Create your first note' }] }] },
-            { type: 'taskItem', attrs: { checked: false }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Try the formatting toolbar' }] }] },
-            { type: 'taskItem', attrs: { checked: false }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Add an image to a note' }] }] },
-            { type: 'taskItem', attrs: { checked: false }, content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Export your notes as a backup' }] }] },
-          ],
-        },
-      ],
-    },
-    plainText: "Here's how checklists work in SamsNotes: Explore the sidebar and folders Create your first note Try the formatting toolbar Add an image to a note Export your notes as a backup",
+    content: [
+      { id: 't1', title: 'Explore the sidebar and folders', status: 'done', order: 0 },
+      { id: 't2', title: 'Create your first note', status: 'todo', order: 1 },
+      { id: 't3', title: 'Try the formatting toolbar', status: 'todo', order: 2 },
+      { id: 't4', title: 'Add an image to a note', status: 'todo', order: 3 },
+      { id: 't5', title: 'Check out the infinite canvas', status: 'todo', order: 4 },
+    ],
+    plainText: "Explore the sidebar and folders\nCreate your first note\nTry the formatting toolbar",
     tags: ['demo'],
     createdAt: now - 30_000,
     updatedAt: now - 30_000,
+  },
+  {
+    id: 'demo-3',
+    folderId: 'whiteboard',
+    viewType: 'canvas',
+    title: 'Untitled Canvas',
+    content: null,
+    plainText: "A blank canvas for your infinite ideas.",
+    tags: ['demo'],
+    createdAt: now - 15_000,
+    updatedAt: now - 15_000,
   },
 ];

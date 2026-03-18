@@ -54,7 +54,7 @@ export function MobileLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-app flex flex-col safe-top safe-bottom">
+    <div className="h-[100dvh] bg-app flex flex-col overflow-hidden safe-top safe-bottom">
       {/* Header */}
       <header className="sticky top-0 z-20 bg-surface-1 border-b border-subtle safe-top">
         <div className="flex items-center justify-between px-4 h-14">
@@ -141,7 +141,7 @@ export function MobileLayout() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden flex flex-col relative w-full">
         {isMobileEditorOpen ? (
           <MobileEditor 
             onMoveNote={() => setMoveNoteId(selectedNoteId)}

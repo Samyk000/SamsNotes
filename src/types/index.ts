@@ -25,12 +25,16 @@ export interface Folder {
   order: number;
 }
 
+// Note View Types
+export type ViewType = 'doc' | 'canvas' | 'todo';
+
 // Note type
 export interface Note {
   id: string;
   folderId: string;
   title: string;
-  content: RichContent | null;
+  viewType?: ViewType; // Determines which editor to use
+  content: any | null; // Changed from RichContent to 'any' to support Tldraw state or Todo state dynamically
   plainText: string;
   tags: string[];
   createdAt: number;
@@ -38,7 +42,7 @@ export interface Note {
 }
 
 // System folder identifiers
-export type SystemFolderId = 'my-notes' | 'to-do' | 'projects' | 'journal' | 'reading-list';
+export type SystemFolderId = 'my-notes' | 'to-do' | 'projects' | 'journal' | 'reading-list' | 'whiteboard';
 
 // Sort options
 export type SortOption = 

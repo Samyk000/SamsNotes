@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils';
 import { useStore } from '@/lib/store';
 import { Note, RichContent } from '@/types';
 import { TipTapEditor } from '@/components/editor/TipTapEditor';
+import { WhiteboardView } from '@/components/editor/WhiteboardView';
+import { TodoView } from '@/components/editor/TodoView';
 import { TagChip } from '@/components/common/TagChip';
 import { SaveIndicator } from '@/components/common/SaveIndicator';
 import { EmptyState } from '@/components/common/EmptyState';
@@ -73,7 +75,7 @@ export function Editor({ onMoveNote }: EditorProps) {
   }, []);
 
   // Update content
-  const handleContentUpdate = useCallback((content: RichContent, plainText: string) => {
+  const handleContentUpdate = useCallback((content: any, plainText: string) => {
     if (selectedNoteId) {
       updateNoteContent(selectedNoteId, content, plainText);
     }
@@ -260,13 +262,27 @@ export function Editor({ onMoveNote }: EditorProps) {
         </div>
       </div>
 
-      {/* Editor */}
-      <TipTapEditor
-        content={selectedNote.content}
-        onUpdate={handleContentUpdate}
-        saveState={saveState}
-        placeholder="Start writing..."
-      />
+      {/* Dynamic View System */}
+      {selectedNote.viewType === 'canvas' ? (
+        <WhiteboardView
+          content={selectedNote.content}
+          onUpdate={handleContentUpdate}
+          saveState={saveState}
+        />
+      ) : selectedNote.viewType === 'todo' ? (
+        <TodoView
+          content={selectedNote.content}
+          onUpdate={handleContentUpdate}
+          saveState={saveState}
+        />
+      ) : (
+        <TipTapEditor
+          content={selectedNote.content}
+          onUpdate={handleContentUpdate}
+          saveState={saveState}
+          placeholder="Start writing..."
+        />
+      )}
     </div>
   );
 }

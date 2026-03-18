@@ -36,6 +36,7 @@ interface ToolbarProps {
   onImageUrl: () => void;
   onAddLink: () => void;
   onRemoveLink: () => void;
+  className?: string;
 }
 
 interface ToolbarButtonProps {
@@ -122,10 +123,11 @@ export function Toolbar({
   onImageUrl,
   onAddLink,
   onRemoveLink,
+  className,
 }: ToolbarProps) {
   // Single state for which dropdown is open (only one can be open at a time)
   const [activeDropdown, setActiveDropdown] = useState<DropdownType>(null);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, openAbove: false });
 
   // Refs for trigger buttons
   const sizeButtonRef = useRef<HTMLButtonElement>(null);
@@ -177,7 +179,15 @@ export function Toolbar({
     }
     if (ref.current) {
       const rect = ref.current.getBoundingClientRect();
-      setMenuPosition({ top: rect.bottom + 4, left: rect.left });
+      const isBottomToolbar = rect.top > window.innerHeight * 0.6;
+      const left = Math.max(8, Math.min(rect.left, window.innerWidth - 180));
+      
+      if (isBottomToolbar) {
+        // Position above the toolbar button
+        setMenuPosition({ top: rect.top - 8, left, openAbove: true });
+      } else {
+        setMenuPosition({ top: rect.bottom + 4, left, openAbove: false });
+      }
     }
     setActiveDropdown(type);
   }, [activeDropdown]);
@@ -230,7 +240,7 @@ export function Toolbar({
 
   return (
     <>
-      <div className="sticky top-0 z-10 bg-surface-2 border-b border-subtle h-12 px-4 flex flex-col justify-center">
+      <div className={cn("bg-surface-2 border-b border-subtle h-12 px-4 flex flex-col justify-center", className)}>
         <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-hide flex-nowrap">
           {/* Undo / Redo */}
           <ToolbarButton
@@ -451,7 +461,7 @@ export function Toolbar({
         <div
           ref={dropdownRef}
           className="fixed z-[9999] min-w-[80px] py-1.5 rounded-xl bg-raised border border-subtle shadow-2xl"
-          style={{ top: menuPosition.top, left: menuPosition.left }}
+          style={{ top: menuPosition.top, left: menuPosition.left, ...(menuPosition.openAbove && { transform: 'translateY(-100%)' }) }}
           onMouseDown={(e) => e.preventDefault()}
         >
           <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-custom">
@@ -481,7 +491,7 @@ export function Toolbar({
         <div
           ref={dropdownRef}
           className="fixed z-[9999] min-w-[140px] py-1.5 rounded-xl bg-raised border border-subtle shadow-2xl"
-          style={{ top: menuPosition.top, left: menuPosition.left }}
+          style={{ top: menuPosition.top, left: menuPosition.left, ...(menuPosition.openAbove && { transform: 'translateY(-100%)' }) }}
           onMouseDown={(e) => e.preventDefault()}
         >
           <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-custom">
@@ -510,7 +520,7 @@ export function Toolbar({
         <div
           ref={dropdownRef}
           className="fixed z-[9999] min-w-[140px] py-1.5 rounded-xl bg-raised border border-subtle shadow-2xl"
-          style={{ top: menuPosition.top, left: menuPosition.left }}
+          style={{ top: menuPosition.top, left: menuPosition.left, ...(menuPosition.openAbove && { transform: 'translateY(-100%)' }) }}
           onMouseDown={(e) => e.preventDefault()}
         >
           <div className="px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-muted-custom">
@@ -539,7 +549,7 @@ export function Toolbar({
         <div
           ref={dropdownRef}
           className="fixed z-[9999] min-w-[160px] py-1 rounded-lg bg-raised border border-subtle shadow-2xl"
-          style={{ top: menuPosition.top, left: menuPosition.left }}
+          style={{ top: menuPosition.top, left: menuPosition.left, ...(menuPosition.openAbove && { transform: 'translateY(-100%)' }) }}
           onMouseDown={(e) => e.preventDefault()}
         >
           <button
