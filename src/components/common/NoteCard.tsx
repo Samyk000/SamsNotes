@@ -95,6 +95,15 @@ export function NoteCard({
 
   return (
     <div
+      role="button"
+      tabIndex={0}
+      aria-selected={isActive}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
       onClick={(e) => {
         if (isLongPressActive.current) {
           isLongPressActive.current = false;
@@ -113,23 +122,23 @@ export function NoteCard({
       onMouseUp={handleTouchEnd}
       onMouseMove={handleTouchMove}
       className={cn(
-        'group relative p-4 rounded-lg cursor-pointer transition-all duration-100 select-none touch-none',
+        'group relative p-3 rounded-lg cursor-pointer transition-all duration-100 select-none touch-none text-left',
         'border',
         isActive 
-          ? 'bg-selected border-border-strong' 
+          ? 'bg-selected border-border-strong shadow-sm' 
           : 'bg-surface-1 border-transparent hover:bg-hover hover:border-subtle'
       )}
     >
       {/* Title */}
       <h3 className={cn(
-        'text-sm font-medium mb-1.5 truncate text-primary-custom'
+        'text-sm font-medium mb-1 truncate text-primary-custom'
       )}>
         {note.title || 'Untitled Note'}
       </h3>
       
       {/* Preview text */}
       <p className={cn(
-        'text-xs mb-2 line-clamp-2 text-muted-custom'
+        'text-xs mb-2.5 line-clamp-2 text-muted-custom'
       )}>
         {previewText}
       </p>

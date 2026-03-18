@@ -230,8 +230,8 @@ export function Toolbar({
 
   return (
     <>
-      <div className="sticky top-0 z-10 bg-surface-2 border-b border-subtle px-4 py-2">
-        <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-hide flex-wrap gap-y-1">
+      <div className="sticky top-0 z-10 bg-surface-2 border-b border-subtle h-12 px-4 flex flex-col justify-center">
+        <div className="flex items-center gap-0.5 overflow-x-auto scrollbar-hide flex-nowrap">
           {/* Undo / Redo */}
           <ToolbarButton
             onClick={() => editor.chain().focus().undo().run()}

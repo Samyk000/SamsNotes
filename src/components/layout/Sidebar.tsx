@@ -286,11 +286,20 @@ export function Sidebar({ onOpenSettings }: SidebarProps) {
                 </div>
               ) : (
                 <div
+                  role="button"
+                  tabIndex={0}
+                  aria-selected={isSelected}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      selectFolder(folder.id);
+                    }
+                  }}
                   className={cn(
                     'group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer',
-                    'transition-colors',
+                    'transition-colors text-left',
                     isSelected
-                      ? 'bg-selected text-primary-custom'
+                      ? 'bg-selected text-primary-custom shadow-sm'
                       : 'text-secondary-custom hover:bg-hover'
                   )}
                   onClick={() => selectFolder(folder.id)}

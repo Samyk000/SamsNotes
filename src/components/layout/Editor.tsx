@@ -82,17 +82,17 @@ export function Editor({ onMoveNote }: EditorProps) {
   // Add tag
   const handleAddTag = useCallback(() => {
     if (!selectedNoteId || !newTag.trim()) return;
-    
+
     const normalizedTag = newTag.trim().toLowerCase();
     const currentTags = selectedNote?.tags || [];
-    
+
     // Check for duplicate
     if (currentTags.some(t => t.toLowerCase() === normalizedTag)) {
       setNewTag('');
       setIsAddingTag(false);
       return;
     }
-    
+
     updateNote(selectedNoteId, { tags: [...currentTags, newTag.trim()] });
     setNewTag('');
     setIsAddingTag(false);
@@ -101,10 +101,10 @@ export function Editor({ onMoveNote }: EditorProps) {
   // Remove tag
   const handleRemoveTag = useCallback((tagToRemove: string) => {
     if (!selectedNoteId) return;
-    
+
     const currentTags = selectedNote?.tags || [];
-    updateNote(selectedNoteId, { 
-      tags: currentTags.filter(t => t !== tagToRemove) 
+    updateNote(selectedNoteId, {
+      tags: currentTags.filter(t => t !== tagToRemove)
     });
   }, [selectedNoteId, selectedNote, updateNote]);
 
@@ -114,13 +114,13 @@ export function Editor({ onMoveNote }: EditorProps) {
   }, [setTagFilter]);
 
   // Format dates
-  const formattedModifiedDate = selectedNote 
+  const formattedModifiedDate = selectedNote
     ? formatDistanceToNow(selectedNote.updatedAt, { addSuffix: true })
     : '';
-  const fullModifiedDate = selectedNote 
+  const fullModifiedDate = selectedNote
     ? format(selectedNote.updatedAt, 'PPpp')
     : '';
-  const formattedCreatedDate = selectedNote 
+  const formattedCreatedDate = selectedNote
     ? format(selectedNote.createdAt, 'PP')
     : '';
 
@@ -135,7 +135,7 @@ export function Editor({ onMoveNote }: EditorProps) {
             type="no-notes"
             title={searchQuery ? 'Select a note' : 'No note selected'}
             description={
-              searchQuery 
+              searchQuery
                 ? 'Click on a note from the list to view and edit it'
                 : 'Create a new note or select one from the list'
             }
@@ -148,12 +148,11 @@ export function Editor({ onMoveNote }: EditorProps) {
   return (
     <div className={cn(
       'flex-1 flex flex-col bg-app h-full overflow-hidden'
-    )}>
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-subtle shrink-0">
+    )}>      {/* Header */}
+      <div className="px-10 py-6 border-b border-subtle shrink-0">
         {/* Top row: Breadcrumb (left) + Metadata (right) */}
-        <div className="flex items-center justify-between gap-4 mb-2">
-          {/* Breadcrumb */}
+        <div className="flex items-center justify-between gap-4 mb-4">
+          {/* Breadcrumb (Left) */}
           <div className="flex items-center gap-2 text-xs text-muted-custom min-w-0">
             <button
               onClick={() => selectedFolder?.id && selectFolder(selectedFolder.id)}
@@ -167,8 +166,8 @@ export function Editor({ onMoveNote }: EditorProps) {
             </span>
           </div>
 
-          {/* Metadata */}
-          <div className="flex items-center gap-4 shrink-0">
+          {/* Metadata (Right) */}
+          <div className="flex items-center gap-5 shrink-0">
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-muted-custom">Modified</span>
               <span className="text-xs text-secondary-custom" title={fullModifiedDate}>
@@ -198,14 +197,15 @@ export function Editor({ onMoveNote }: EditorProps) {
           }}
           placeholder="Untitled Note"
           className={cn(
-            'w-full text-2xl font-semibold bg-transparent',
+            'w-full text-3xl font-bold bg-transparent mb-3',
             'text-primary-custom placeholder:text-muted-custom',
             'focus:outline-none'
           )}
+          style={{ letterSpacing: '-0.02em' }}
         />
 
         {/* Tags row */}
-        <div className="flex items-center gap-2 flex-wrap mt-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {selectedNote.tags.map(tag => (
             <TagChip
               key={tag}
