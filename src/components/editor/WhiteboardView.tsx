@@ -61,6 +61,12 @@ export function WhiteboardView({ content, onUpdate, saveState }: WhiteboardViewP
 
   return (
     <div className="flex-1 w-full h-full relative overflow-hidden min-h-0">
+      <style dangerouslySetInnerHTML={{__html: `
+        /* When fullscreen, Excalidraw library button needs to shift left to make room for our Close button */
+        .fixed.inset-0 .excalidraw .layer-ui__wrapper .FixedSideContainer--top-right {
+          margin-right: 72px !important;
+        }
+      `}} />
       <div className="absolute inset-0">
         <Excalidraw
           initialData={initialDataRef.current}

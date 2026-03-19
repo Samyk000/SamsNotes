@@ -153,11 +153,11 @@ export function Editor({ onMoveNote }: EditorProps) {
     <div className={cn(
       'flex-1 flex flex-col bg-app h-full overflow-hidden'
     )}>      {/* Header */}
-      <div className="px-10 py-6 border-b border-subtle shrink-0">
+      <div className="px-5 md:px-10 py-3 md:py-6 border-b border-subtle shrink-0">
         {/* Top row: Title + Tags (left) + Metadata (right) */}
-        <div className="flex items-start lg:items-center justify-between gap-4 flex-col lg:flex-row">
+        <div className="flex flex-wrap items-center justify-between gap-y-3 gap-x-4 w-full">
           
-          <div className="flex items-center gap-3 flex-1 min-w-0 flex-wrap">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             {/* Title */}
             <input
               ref={titleInputRef}
@@ -263,10 +263,10 @@ export function Editor({ onMoveNote }: EditorProps) {
         isFullscreen ? "fixed inset-0 z-[9999]" : "relative"
       )}>
         {isFullscreen && selectedNote.viewType === 'canvas' && (
-          <div className="absolute top-4 left-4 z-[10000]">
+          <div className="absolute top-4 right-4 z-[10001]">
             <button
                onClick={() => setIsFullscreen(false)}
-               className="p-2 bg-surface-2 rounded-lg border border-subtle text-muted-custom hover:text-primary-custom hover:bg-hover shadow-lg transition-all"
+               className="p-2 bg-surface-2/90 backdrop-blur-sm rounded-lg border border-subtle text-muted-custom hover:text-primary-custom hover:bg-hover shadow-lg transition-all"
                title="Close Fullscreen"
             >
               <Minimize className="w-4 h-4" />

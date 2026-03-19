@@ -8,9 +8,11 @@ import { MobileNoteList } from './MobileNoteList';
 import { MobileEditor } from './MobileEditor';
 import { SettingsDialog } from '@/components/dialogs/SettingsDialog';
 import { MoveNoteDialog } from '@/components/dialogs/MoveNoteDialog';
-import { Search, Settings, X } from 'lucide-react';
+import { Search, Settings, X, ChevronLeft, MoreHorizontal, Copy, Move, Trash2, Maximize, Minimize } from 'lucide-react';
 import { SaveIndicator } from '@/components/common/SaveIndicator';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNowStrict } from 'date-fns';
+import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
+import { toast } from 'sonner';
 
 export function MobileLayout() {
   const {
@@ -28,9 +30,14 @@ export function MobileLayout() {
   const [showSettings, setShowSettings] = useState(false);
   const [moveNoteId, setMoveNoteId] = useState<string | null>(null);
 
+  const [showMenu, setShowMenu] = useState(false);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
   // Handle back navigation
   const handleBack = useCallback(() => {
     setMobileEditorOpen(false);
+    setIsFullscreen(false);
   }, [setMobileEditorOpen]);
 
   // Handle note selection (open editor)
@@ -42,6 +49,40 @@ export function MobileLayout() {
   const handleNoteCreate = useCallback(() => {
     setMobileEditorOpen(true);
   }, [setMobileEditorOpen]);
+
+  // Actions for the open note 
+  const { duplicateNote, deleteNote } = useStore.getState();
+
+  const handleDuplicate = async () => {
+    if (!selectedNoteId) return;
+    await duplicateNote(selectedNoteId);
+    setShowMenu(false);
+  };
+
+  const handleDeleteConfirmed = async () => {
+    if (!selectedNoteId) return;
+    const deleted = await deleteNote(selectedNoteId);
+    setShowConfirmDelete(false);
+    if (deleted) {
+      setMobileEditorOpen(false);
+      toast(`"${deleted.title || 'Untitled Note'}" deleted`, {
+        action: {
+          label: 'Undo',
+          onClick: async () => {
+            useStore.setState(s => ({ notes: [...s.notes, deleted] }));
+            const { notesDB } = await import('@/lib/db');
+            await notesDB.put(deleted);
+          },
+        },
+        duration: 5000,
+      });
+    }
+  };
+
+  const handleMove = () => {
+    setShowMenu(false);
+    if (selectedNoteId) setMoveNoteId(selectedNoteId);
+  };
 
   if (!isInitialized) {
     return (
@@ -56,36 +97,96 @@ export function MobileLayout() {
   return (
     <div className="h-[100dvh] bg-app flex flex-col overflow-hidden safe-top safe-bottom">
       {/* Header */}
-      <header className="sticky top-0 z-20 bg-surface-1 border-b border-subtle safe-top">
+      {!isFullscreen && (
+        <header className="sticky top-0 z-20 bg-surface-1 border-b border-subtle safe-top shrink-0">
         <div className="flex items-center justify-between px-4 h-14">
           {isMobileEditorOpen ? (
             <>
               <button
                 onClick={handleBack}
-                className="p-2 -ml-2 rounded-lg hover:bg-hover text-secondary-custom transition-colors"
+                className="p-2 -ml-2 rounded-lg hover:bg-hover text-secondary-custom transition-colors flex items-center gap-1"
                 aria-label="Back to notes"
               >
-                <X className="w-5 h-5" />
+                <ChevronLeft className="w-5 h-5" />
               </button>
-              {/* Metadata instead of logo */}
-              <div className="flex items-center gap-3">
-                {(() => {
-                  const note = notes.find(n => n.id === selectedNoteId);
-                  if (!note) return null;
-                  return (
-                    <>
-                      <span className="text-xs text-muted-custom">
-                        {formatDistanceToNow(note.updatedAt, { addSuffix: true })}
-                      </span>
-                      <SaveIndicator state={saveState} />
-                    </>
-                  );
-                })()}
+              
+              <div className="flex flex-1 items-center justify-between ml-2">
+                {/* Minimal Metadata Bubble */}
+                <div className="flex items-center gap-2 text-xs text-muted-custom bg-surface-2 px-3 py-1.5 rounded-full border border-subtle/30 shadow-[0_2px_8px_rgba(0,0,0,0.02)]">
+                  {(() => {
+                    const note = notes.find(n => n.id === selectedNoteId);
+                    if (!note) return null;
+                    const strictTime = formatDistanceToNowStrict(note.updatedAt);
+                    const [amount, unit] = strictTime.split(' ');
+                    const shortTime = `${amount}${unit?.startsWith('mo') ? 'mo' : unit?.[0]}`;
+                    return (
+                      <>
+                        <span>{shortTime}</span>
+                        <span className="opacity-40 border-l border-subtle h-3 mx-0.5"></span>
+                        <SaveIndicator state={saveState} minimal />
+                      </>
+                    );
+                  })()}
+                </div>
+
+                {/* Right Actions */}
+                <div className="flex items-center gap-1">
+                  {(() => {
+                    const note = notes.find(n => n.id === selectedNoteId);
+                    if (note?.viewType === 'canvas') {
+                      return (
+                        <button
+                          onClick={() => setIsFullscreen(true)}
+                          className="p-2 rounded-lg hover:bg-hover text-muted-custom transition-colors"
+                          aria-label="Fullscreen"
+                        >
+                          <Maximize className="w-4 h-4" />
+                        </button>
+                      );
+                    }
+                    return null;
+                  })()}
+
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowMenu(!showMenu)}
+                      className="p-2 -mr-2 rounded-lg hover:bg-hover text-muted-custom transition-colors"
+                      aria-label="Note actions"
+                    >
+                      <MoreHorizontal className="w-5 h-5" />
+                    </button>
+                    {showMenu && (
+                      <>
+                        <div className="fixed inset-0 z-40" onClick={() => setShowMenu(false)} />
+                        <div className="absolute right-0 top-full mt-1 z-50 min-w-[140px] py-1 rounded-lg bg-raised border border-subtle shadow-xl">
+                          <button
+                            onClick={handleDuplicate}
+                            className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm text-secondary-custom hover:bg-hover transition-colors"
+                          >
+                            <Copy className="w-4 h-4" /> Duplicate
+                          </button>
+                          <button
+                            onClick={handleMove}
+                            className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm text-secondary-custom hover:bg-hover transition-colors"
+                          >
+                            <Move className="w-4 h-4" /> Move to...
+                          </button>
+                          <button
+                            onClick={() => { setShowMenu(false); setShowConfirmDelete(true); }}
+                            className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm text-accent-error hover:bg-hover transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" /> Delete
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
               </div>
             </>
           ) : (
             <>
-              <Logo size="sm" />
+              <Logo size="sm" showWordmark={false} />
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setShowSearch(!showSearch)}
@@ -139,13 +240,25 @@ export function MobileLayout() {
           </div>
         )}
       </header>
+      )}
+
+      {/* Fullscreen Close Button */}
+      {isFullscreen && (
+        <div className="absolute top-4 right-4 z-[10001]">
+          <button
+            onClick={() => setIsFullscreen(false)}
+            className="p-2 bg-surface-2/90 backdrop-blur-sm rounded-lg border border-subtle text-muted-custom hover:text-primary-custom hover:bg-hover shadow-lg transition-all"
+            aria-label="Close Fullscreen"
+          >
+            <Minimize className="w-5 h-5" />
+          </button>
+        </div>
+      )}
 
       {/* Content */}
-      <main className="flex-1 overflow-hidden flex flex-col relative w-full">
+      <main className={cn("flex-1 overflow-hidden flex flex-col w-full", isFullscreen ? "fixed inset-0 z-[9999] bg-app" : "relative")}>
         {isMobileEditorOpen ? (
-          <MobileEditor 
-            onMoveNote={() => setMoveNoteId(selectedNoteId)}
-          />
+          <MobileEditor />
         ) : (
           <MobileNoteList 
             onSelectNote={handleNoteSelect}
@@ -164,6 +277,15 @@ export function MobileLayout() {
         isOpen={!!moveNoteId}
         noteId={moveNoteId}
         onClose={() => setMoveNoteId(null)}
+      />
+      <ConfirmDialog
+        open={showConfirmDelete}
+        onOpenChange={setShowConfirmDelete}
+        title="Delete Note"
+        description={`The note will be deleted. You can undo immediately after.`}
+        confirmLabel="Delete"
+        isDestructive
+        onConfirm={handleDeleteConfirmed}
       />
     </div>
   );

@@ -262,17 +262,19 @@ export function TipTapEditor({
 
       {/* Mobile Toolbar (Hidden on Desktop) */}
       <div 
-        className="md:hidden fixed left-0 right-0 z-50 transition-transform duration-75"
-        style={{ bottom: 0, transform: `translateY(-${keyboardHeight}px)` }}
+        className="md:hidden fixed left-0 right-0 z-[100] transition-[bottom] duration-100 ease-out"
+        style={{ bottom: keyboardHeight > 0 ? keyboardHeight : 0 }}
       >
-        <Toolbar
-          editor={editor}
-          onImageUpload={handleImageUpload}
-          onImageUrl={() => setIsImageDialogOpen(true)}
-          onAddLink={() => setIsLinkDialogOpen(true)}
-          onRemoveLink={unsetLink}
-          className="border-t border-b-0 border-subtle safe-area-bottom bg-surface-2"
-        />
+        <div className="w-full bg-surface-2 shadow-[0_-4px_24px_rgba(0,0,0,0.08)]">
+          <Toolbar
+            editor={editor}
+            onImageUpload={handleImageUpload}
+            onImageUrl={() => setIsImageDialogOpen(true)}
+            onAddLink={() => setIsLinkDialogOpen(true)}
+            onRemoveLink={unsetLink}
+            className="border-t border-b-0 border-subtle safe-area-bottom bg-transparent h-12"
+          />
+        </div>
       </div>
 
       {/* Hidden file input for image upload */}

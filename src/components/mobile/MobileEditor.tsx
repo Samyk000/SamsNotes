@@ -12,11 +12,7 @@ import { ConfirmDialog } from '@/components/dialogs/ConfirmDialog';
 import { toast } from 'sonner';
 import { Plus, MoreHorizontal, Trash2, Copy, Move } from 'lucide-react';
 
-interface MobileEditorProps {
-  onMoveNote: () => void;
-}
-
-export function MobileEditor({ onMoveNote }: MobileEditorProps) {
+export function MobileEditor() {
   const {
     notes,
     selectedNoteId,
@@ -31,11 +27,8 @@ export function MobileEditor({ onMoveNote }: MobileEditorProps) {
 
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [newTag, setNewTag] = useState('');
-  const [showMenu, setShowMenu] = useState(false);
-  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
   
   const tagInputRef = useRef<HTMLInputElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
 
   const selectedNote = notes.find(n => n.id === selectedNoteId);
 
@@ -46,19 +39,7 @@ export function MobileEditor({ onMoveNote }: MobileEditorProps) {
     }
   }, [isAddingTag]);
 
-  // Close menu on outside click
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setShowMenu(false);
-      }
-    };
-    if (showMenu) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
-    }
-  }, [showMenu]);
-
+  // Setup complete
   const [localTitle, setLocalTitle] = useState(selectedNote?.title || '');
   const titleDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -120,48 +101,6 @@ export function MobileEditor({ onMoveNote }: MobileEditorProps) {
     });
   }, [selectedNoteId, selectedNote, updateNote]);
 
-  // Handle delete — shows confirmation dialog
-  const handleDelete = () => {
-    setShowMenu(false);
-    setShowConfirmDelete(true);
-  };
-
-  const handleDeleteConfirmed = async () => {
-    if (!selectedNoteId) return;
-    const deleted = await deleteNote(selectedNoteId);
-    setShowConfirmDelete(false);
-    if (deleted) {
-      setMobileEditorOpen(false);
-      toast(`"${deleted.title || 'Untitled Note'}" deleted`, {
-        action: {
-          label: 'Undo',
-          onClick: async () => {
-            useStore.setState(s => ({ notes: [...s.notes, deleted] }));
-            const { notesDB } = await import('@/lib/db');
-            await notesDB.put(deleted);
-          },
-        },
-        duration: 5000,
-      });
-    }
-  };
-
-  // Handle duplicate
-  const handleDuplicate = async () => {
-    if (!selectedNoteId) return;
-    
-    const duplicated = await duplicateNote(selectedNoteId);
-    if (duplicated) {
-      setShowMenu(false);
-    }
-  };
-
-  // Handle move
-  const handleMove = () => {
-    setShowMenu(false);
-    onMoveNote();
-  };
-
   if (!selectedNote) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -172,10 +111,10 @@ export function MobileEditor({ onMoveNote }: MobileEditorProps) {
 
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header with title and actions */}
-      <div className="px-4 py-3 border-b border-subtle bg-surface-1">
-        <div className="flex items-start justify-between gap-2">
+    <div className="flex flex-col h-full bg-app">
+      {/* Inline Title and Tags */}
+      <div className="px-4 py-4 border-b border-subtle bg-surface-1 shrink-0">
+        <div className="flex items-center gap-3 overflow-x-auto no-scrollbar w-full">
           {/* Title */}
           <input
             type="text"
@@ -188,99 +127,69 @@ export function MobileEditor({ onMoveNote }: MobileEditorProps) {
             }}
             placeholder="Untitled Note"
             className={cn(
-              'flex-1 text-lg font-semibold bg-transparent',
+              'text-xl font-bold bg-transparent min-w-[120px] max-w-[200px]',
               'text-primary-custom placeholder:text-muted-custom',
-              'focus:outline-none'
+              'focus:outline-none border-b border-subtle/20 focus:border-subtle/50 pb-0.5'
             )}
+            style={{ letterSpacing: '-0.02em' }}
           />
 
-          {/* Actions menu */}
-          <div ref={menuRef} className="relative">
-            <button
-              onClick={() => setShowMenu(!showMenu)}
-              className="p-2 rounded-lg hover:bg-hover text-muted-custom transition-colors"
-              aria-label="Note actions"
-            >
-              <MoreHorizontal className="w-5 h-5" />
-            </button>
-
-            {showMenu && (
-              <div className="absolute right-0 top-full mt-1 z-50 min-w-[140px] py-1 rounded-lg bg-raised border border-subtle shadow-lg">
-                <button
-                  onClick={handleDuplicate}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm text-secondary-custom hover:bg-hover transition-colors"
-                >
-                  <Copy className="w-4 h-4" />
-                  Duplicate
-                </button>
-                <button
-                  onClick={handleMove}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm text-secondary-custom hover:bg-hover transition-colors"
-                >
-                  <Move className="w-4 h-4" />
-                  Move to...
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="w-full flex items-center gap-2 px-3 py-2.5 text-left text-sm text-accent-error hover:bg-hover transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete
-                </button>
-              </div>
+          {/* Tags */}
+          <div className="flex items-center gap-1.5 shrink-0 pr-2">
+            {selectedNote.tags.map(tag => (
+              <TagChip
+                key={tag}
+                tag={tag}
+                size="sm"
+                isRemovable
+                onRemove={() => handleRemoveTag(tag)}
+                onClick={() => {
+                  setTagFilter(tag);
+                  setMobileEditorOpen(false);
+                }}
+              />
+            ))}
+            
+            {isAddingTag ? (
+              <input
+                ref={tagInputRef}
+                type="text"
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                onBlur={handleAddTag}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleAddTag();
+                  if (e.key === 'Escape') {
+                    setIsAddingTag(false);
+                    setNewTag('');
+                  }
+                  if (e.key === ',') {
+                    e.preventDefault();
+                    handleAddTag();
+                  }
+                }}
+                placeholder="Tag"
+                className={cn(
+                  'w-16 h-6 px-1.5 rounded-md text-[10px]',
+                  'bg-chip-inactive-fill border border-chip-inactive-border',
+                  'text-secondary-custom placeholder:text-muted-custom',
+                  'focus:outline-none focus:border-border-focus'
+                )}
+              />
+            ) : (
+              <button
+                onClick={() => setIsAddingTag(true)}
+                className={cn(
+                  'flex items-center gap-1 px-1.5 py-0.5 rounded-md',
+                  'text-[10px] text-muted-custom hover:text-secondary-custom',
+                  'hover:bg-hover transition-colors whitespace-nowrap'
+                )}
+              >
+                <Plus className="w-3 h-3" />
+                <span>Add tag</span>
+              </button>
             )}
           </div>
-        </div>
-
-
-
-        {/* Tags */}
-        <div className="flex items-center gap-2 mt-2 flex-wrap">
-          {selectedNote.tags.map(tag => (
-            <TagChip
-              key={tag}
-              tag={tag}
-              size="sm"
-              isRemovable
-              onRemove={() => handleRemoveTag(tag)}
-              onClick={() => {
-                setTagFilter(tag);
-                setMobileEditorOpen(false);
-              }}
-            />
-          ))}
-          
-          {isAddingTag ? (
-            <input
-              ref={tagInputRef}
-              type="text"
-              value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
-              onBlur={handleAddTag}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleAddTag();
-                if (e.key === 'Escape') {
-                  setIsAddingTag(false);
-                  setNewTag('');
-                }
-              }}
-              placeholder="Tag"
-              className={cn(
-                'w-20 h-6 px-2 rounded-md text-xs',
-                'bg-chip-inactive-fill border border-chip-inactive-border',
-                'text-secondary-custom placeholder:text-muted-custom',
-                'focus:outline-none focus:border-border-focus'
-              )}
-            />
-          ) : (
-            <button
-              onClick={() => setIsAddingTag(true)}
-              className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-muted-custom hover:text-secondary-custom hover:bg-hover transition-colors"
-            >
-              <Plus className="w-3 h-3" />
-              <span>Add tag</span>
-            </button>
-          )}
         </div>
       </div>
 
@@ -310,16 +219,6 @@ export function MobileEditor({ onMoveNote }: MobileEditorProps) {
           />
         )}
       </div>
-      {/* Confirm Delete */}
-      <ConfirmDialog
-        open={showConfirmDelete}
-        onOpenChange={setShowConfirmDelete}
-        title="Delete Note"
-        description={`"${selectedNote?.title || 'Untitled Note'}" will be deleted. You can undo immediately after.`}
-        confirmLabel="Delete"
-        isDestructive
-        onConfirm={handleDeleteConfirmed}
-      />
     </div>
   );
 }
