@@ -10,8 +10,8 @@ import { TodoView } from '@/components/editor/TodoView';
 import { TagChip } from '@/components/common/TagChip';
 import { SaveIndicator } from '@/components/common/SaveIndicator';
 import { EmptyState } from '@/components/common/EmptyState';
-import { formatDistanceToNow, format } from 'date-fns';
-import { ChevronRight, Plus, X } from 'lucide-react';
+import { formatDistanceToNowStrict, format } from 'date-fns';
+import { Plus, X, Maximize, Minimize } from 'lucide-react';
 import { nanoid } from 'nanoid';
 
 interface EditorProps {
@@ -32,6 +32,7 @@ export function Editor({ onMoveNote }: EditorProps) {
     isInitialized,
   } = useStore();
 
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [isAddingTag, setIsAddingTag] = useState(false);
   const [newTag, setNewTag] = useState('');
   const tagInputRef = useRef<HTMLInputElement>(null);
@@ -116,14 +117,15 @@ export function Editor({ onMoveNote }: EditorProps) {
   }, [setTagFilter]);
 
   // Format dates
-  const formattedModifiedDate = selectedNote
-    ? formatDistanceToNow(selectedNote.updatedAt, { addSuffix: true })
-    : '';
+  const strictTime = selectedNote ? formatDistanceToNowStrict(selectedNote.updatedAt) : '';
+  const [amount, unit] = strictTime.split(' ');
+  const formattedModifiedDate = selectedNote ? `${amount}${unit?.startsWith('mo') ? 'mo' : unit?.[0]}` : '';
+
   const fullModifiedDate = selectedNote
     ? format(selectedNote.updatedAt, 'PPpp')
     : '';
   const formattedCreatedDate = selectedNote
-    ? format(selectedNote.createdAt, 'PP')
+    ? format(selectedNote.createdAt, 'MMM d, yyyy')
     : '';
 
   // Show empty state when no note is selected
@@ -152,124 +154,133 @@ export function Editor({ onMoveNote }: EditorProps) {
       'flex-1 flex flex-col bg-app h-full overflow-hidden'
     )}>      {/* Header */}
       <div className="px-10 py-6 border-b border-subtle shrink-0">
-        {/* Top row: Breadcrumb (left) + Metadata (right) */}
-        <div className="flex items-center justify-between gap-4 mb-4">
-          {/* Breadcrumb (Left) */}
-          <div className="flex items-center gap-2 text-xs text-muted-custom min-w-0">
-            <button
-              onClick={() => selectedFolder?.id && selectFolder(selectedFolder.id)}
-              className="hover:text-secondary-custom transition-colors shrink-0"
-            >
-              {selectedFolder?.name || 'Notes'}
-            </button>
-            <ChevronRight className="w-3 h-3 shrink-0" />
-            <span className="text-secondary-custom truncate">
-              {selectedNote.title || 'Untitled Note'}
-            </span>
+        {/* Top row: Title + Tags (left) + Metadata (right) */}
+        <div className="flex items-start lg:items-center justify-between gap-4 flex-col lg:flex-row">
+          
+          <div className="flex items-center gap-3 flex-1 min-w-0 flex-wrap">
+            {/* Title */}
+            <input
+              ref={titleInputRef}
+              type="text"
+              value={localTitle}
+              onChange={(e) => handleTitleChange(e.target.value)}
+              onBlur={() => {
+                if (!localTitle.trim()) {
+                  handleTitleChange('Untitled Note');
+                }
+              }}
+              placeholder="Untitled Note"
+              className={cn(
+                'text-2xl font-bold bg-transparent min-w-[150px] max-w-sm',
+                'text-primary-custom placeholder:text-muted-custom',
+                'focus:outline-none truncate border-b border-subtle/20 focus:border-subtle/50 transition-colors pb-0.5'
+              )}
+              style={{ letterSpacing: '-0.02em' }}
+            />
+
+            {/* Tags row */}
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth pr-4">
+              {selectedNote.tags.map(tag => (
+                <TagChip
+                  key={tag}
+                  tag={tag}
+                  size="sm"
+                  isRemovable
+                  onRemove={() => handleRemoveTag(tag)}
+                  onClick={() => handleTagClick(tag)}
+                />
+              ))}
+              
+              {/* Add tag input */}
+              {isAddingTag ? (
+                <input
+                  ref={tagInputRef}
+                  type="text"
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onBlur={handleAddTag}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleAddTag();
+                    if (e.key === 'Escape') {
+                      setIsAddingTag(false);
+                      setNewTag('');
+                    }
+                    if (e.key === ',') {
+                      e.preventDefault();
+                      handleAddTag();
+                    }
+                  }}
+                  placeholder="Tag name"
+                  className={cn(
+                    'w-20 h-6 px-1.5 rounded-md text-[10px]',
+                    'bg-chip-inactive-fill border border-chip-inactive-border',
+                    'text-secondary-custom placeholder:text-muted-custom',
+                    'focus:outline-none focus:border-border-focus'
+                  )}
+                />
+              ) : (
+                <button
+                  onClick={() => setIsAddingTag(true)}
+                  className={cn(
+                    'flex items-center gap-1 px-1.5 py-0.5 rounded-md',
+                    'text-[10px] text-muted-custom hover:text-secondary-custom',
+                    'hover:bg-hover transition-colors whitespace-nowrap'
+                  )}
+                >
+                  <Plus className="w-3 h-3" />
+                  <span>Add tag</span>
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Metadata (Right) */}
-          <div className="flex items-center gap-5 shrink-0">
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-custom">Modified</span>
-              <span className="text-xs text-secondary-custom" title={fullModifiedDate}>
-                {formattedModifiedDate}
-              </span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-muted-custom">Created</span>
-              <span className="text-xs text-secondary-custom">
-                {formattedCreatedDate}
-              </span>
-            </div>
-            <SaveIndicator state={saveState} />
+          <div className="flex items-center gap-2.5 shrink-0 text-xs text-muted-custom bg-surface-2 px-3 py-1.5 rounded-full border border-subtle/30 shadow-sm">
+            <span title={fullModifiedDate}>{formattedModifiedDate}</span>
+            <span className="opacity-40">•</span>
+            <span>{formattedCreatedDate}</span>
+            <span className="opacity-40 border-l border-subtle h-3 mx-0.5"></span>
+            <SaveIndicator state={saveState} minimal />
+            {selectedNote.viewType === 'canvas' && (
+              <>
+                <span className="opacity-40 border-l border-subtle h-3 mx-0.5"></span>
+                <button
+                  onClick={() => setIsFullscreen(true)}
+                  className="p-1 -ml-1 rounded-md hover:text-primary-custom transition-colors"
+                  title="Fullscreen Whiteboard"
+                >
+                  <Maximize className="w-3.5 h-3.5" />
+                </button>
+              </>
+            )}
           </div>
-        </div>
-
-        {/* Title */}
-        <input
-          ref={titleInputRef}
-          type="text"
-          value={localTitle}
-          onChange={(e) => handleTitleChange(e.target.value)}
-          onBlur={() => {
-            if (!localTitle.trim()) {
-              handleTitleChange('Untitled Note');
-            }
-          }}
-          placeholder="Untitled Note"
-          className={cn(
-            'w-full text-3xl font-bold bg-transparent mb-3',
-            'text-primary-custom placeholder:text-muted-custom',
-            'focus:outline-none'
-          )}
-          style={{ letterSpacing: '-0.02em' }}
-        />
-
-        {/* Tags row */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {selectedNote.tags.map(tag => (
-            <TagChip
-              key={tag}
-              tag={tag}
-              size="md"
-              isRemovable
-              onRemove={() => handleRemoveTag(tag)}
-              onClick={() => handleTagClick(tag)}
-            />
-          ))}
-          
-          {/* Add tag input */}
-          {isAddingTag ? (
-            <input
-              ref={tagInputRef}
-              type="text"
-              value={newTag}
-              onChange={(e) => setNewTag(e.target.value)}
-              onBlur={handleAddTag}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleAddTag();
-                if (e.key === 'Escape') {
-                  setIsAddingTag(false);
-                  setNewTag('');
-                }
-                if (e.key === ',') {
-                  e.preventDefault();
-                  handleAddTag();
-                }
-              }}
-              placeholder="Tag name"
-              className={cn(
-                'w-24 h-7 px-2 rounded-md text-xs',
-                'bg-chip-inactive-fill border border-chip-inactive-border',
-                'text-secondary-custom placeholder:text-muted-custom',
-                'focus:outline-none focus:border-border-focus'
-              )}
-            />
-          ) : (
-            <button
-              onClick={() => setIsAddingTag(true)}
-              className={cn(
-                'flex items-center gap-1 px-2 py-1 rounded-md',
-                'text-xs text-muted-custom hover:text-secondary-custom',
-                'hover:bg-hover transition-colors'
-              )}
-            >
-              <Plus className="w-3 h-3" />
-              <span>Add tag</span>
-            </button>
-          )}
         </div>
       </div>
 
       {/* Dynamic View System */}
-      {selectedNote.viewType === 'canvas' ? (
-        <WhiteboardView
-          content={selectedNote.content}
-          onUpdate={handleContentUpdate}
-          saveState={saveState}
-        />
-      ) : selectedNote.viewType === 'todo' ? (
+      <div className={cn(
+        "flex-1 overflow-hidden flex flex-col min-h-0 bg-app",
+        isFullscreen ? "fixed inset-0 z-[9999]" : "relative"
+      )}>
+        {isFullscreen && selectedNote.viewType === 'canvas' && (
+          <div className="absolute top-4 left-4 z-[10000]">
+            <button
+               onClick={() => setIsFullscreen(false)}
+               className="p-2 bg-surface-2 rounded-lg border border-subtle text-muted-custom hover:text-primary-custom hover:bg-hover shadow-lg transition-all"
+               title="Close Fullscreen"
+            >
+              <Minimize className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
+        {selectedNote.viewType === 'canvas' ? (
+          <WhiteboardView
+            content={selectedNote.content}
+            onUpdate={handleContentUpdate}
+            saveState={saveState}
+          />
+        ) : selectedNote.viewType === 'todo' ? (
         <TodoView
           content={selectedNote.content}
           onUpdate={handleContentUpdate}
@@ -283,6 +294,7 @@ export function Editor({ onMoveNote }: EditorProps) {
           placeholder="Start writing..."
         />
       )}
+      </div>
     </div>
   );
 }

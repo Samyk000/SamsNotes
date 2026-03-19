@@ -5,9 +5,10 @@ import { Check, Loader2, AlertCircle } from 'lucide-react';
 
 interface SaveIndicatorProps {
   state: 'saved' | 'saving' | 'error';
+  minimal?: boolean;
 }
 
-export function SaveIndicator({ state }: SaveIndicatorProps) {
+export function SaveIndicator({ state, minimal }: SaveIndicatorProps) {
   return (
     <div className={cn(
       'flex items-center gap-1.5 text-xs font-medium transition-all duration-200',
@@ -18,19 +19,19 @@ export function SaveIndicator({ state }: SaveIndicatorProps) {
       {state === 'saved' && (
         <>
           <Check className="w-3.5 h-3.5" />
-          <span>Saved</span>
+          {!minimal && <span>Saved</span>}
         </>
       )}
       {state === 'saving' && (
         <>
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          <span>Saving...</span>
+          {!minimal && <span>Saving...</span>}
         </>
       )}
       {state === 'error' && (
         <>
           <AlertCircle className="w-3.5 h-3.5" />
-          <span>Error saving</span>
+          {!minimal && <span>Error saving</span>}
         </>
       )}
     </div>

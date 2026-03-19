@@ -119,7 +119,7 @@ export function NoteList({ onMoveNote }: NoteListProps) {
   return (
     <div className="flex flex-col h-full bg-surface-1 border-r border-subtle">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-subtle">
+      <div className="h-[53px] flex items-center justify-between px-4 border-b border-subtle shrink-0">
         <h2 className="text-sm font-semibold text-primary-custom truncate">
           {searchQuery ? 'Search Results' : activeFolder?.name ?? 'Notes'}
         </h2>
@@ -134,7 +134,7 @@ export function NoteList({ onMoveNote }: NoteListProps) {
       </div>
 
       {/* Sort & Filter controls */}
-      <div className="flex items-center gap-2 px-4 py-2 border-b border-subtle">
+      <div className="flex items-center gap-2 px-4 py-2 shrink-0">
         {/* Sort */}
         <div ref={sortMenuRef} className="relative">
           <button

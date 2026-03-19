@@ -184,12 +184,12 @@ export function Sidebar({ onOpenSettings }: SidebarProps) {
   return (
     <div className="flex flex-col h-full bg-surface-1 border-r border-subtle">
       {/* Logo */}
-      <div className="px-4 py-4 border-b border-subtle">
+      <div className="h-[53px] px-4 border-b border-subtle flex items-center shrink-0">
         <Logo size="md" />
       </div>
 
       {/* Search */}
-      <div className="px-3 py-3 border-b border-subtle">
+      <div className="px-3 py-3 shrink-0">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-custom pointer-events-none" />
           <input

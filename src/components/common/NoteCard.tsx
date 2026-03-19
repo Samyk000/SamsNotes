@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { Note } from '@/types';
-import { formatDistanceToNow } from 'date-fns';
+import { formatDistanceToNowStrict } from 'date-fns';
 import { TagChip } from './TagChip';
 import { MoreHorizontal } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
@@ -31,7 +31,10 @@ export function NoteCard({
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const isLongPressActive = useRef(false);
 
-  const relativeTime = formatDistanceToNow(note.updatedAt, { addSuffix: true });
+  const strictTime = formatDistanceToNowStrict(note.updatedAt); // "1 minute", "2 hours", etc.
+  const [amount, unit] = strictTime.split(' ');
+  const relativeTime = `${amount}${unit.startsWith('mo') ? 'mo' : unit[0]}`;
+
   const previewText = note.plainText.slice(0, 100) || 'No content';
 
   useEffect(() => {
@@ -123,10 +126,10 @@ export function NoteCard({
       onMouseMove={handleTouchMove}
       className={cn(
         'group relative p-3 rounded-lg cursor-pointer transition-all duration-100 select-none touch-none text-left',
-        'border',
+        'border shadow-[0_2px_8px_rgba(0,0,0,0.02)]',
         isActive 
           ? 'bg-selected border-border-strong shadow-sm' 
-          : 'bg-surface-1 border-transparent hover:bg-hover hover:border-subtle'
+          : 'bg-surface-1 border-subtle/30 hover:bg-hover hover:border-subtle hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)]'
       )}
     >
       {/* Title */}

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState, useRef } from 'react';
+import { useCallback, useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
@@ -78,6 +78,30 @@ export function TipTapEditor({
   const [linkUrl, setLinkUrl] = useState('');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Mobile keyboard handling
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.visualViewport) return;
+
+    const viewport = window.visualViewport;
+    
+    const handleResize = () => {
+      // Calculate offset based on window layout height vs actual visual height
+      const offset = window.innerHeight - viewport.height;
+      setKeyboardHeight(Math.max(0, offset));
+    };
+
+    viewport.addEventListener('resize', handleResize);
+    viewport.addEventListener('scroll', handleResize);
+    handleResize();
+
+    return () => {
+      viewport.removeEventListener('resize', handleResize);
+      viewport.removeEventListener('scroll', handleResize);
+    };
+  }, []);
 
   const editor = useEditor({
     extensions: [
@@ -231,20 +255,25 @@ export function TipTapEditor({
 
       {/* Editor area */}
       <div className="flex-1 overflow-y-auto">
-        <div className="px-4 xl:px-10 py-6 pb-24 md:pb-32 max-w-4xl mx-auto">
+        <div className="px-10 py-6 pb-24 md:pb-32">
           <EditorContent editor={editor} />
         </div>
       </div>
 
       {/* Mobile Toolbar (Hidden on Desktop) */}
-      <Toolbar
-        editor={editor}
-        onImageUpload={handleImageUpload}
-        onImageUrl={() => setIsImageDialogOpen(true)}
-        onAddLink={() => setIsLinkDialogOpen(true)}
-        onRemoveLink={unsetLink}
-        className="md:hidden mt-auto border-t border-b-0 border-subtle safe-area-bottom"
-      />
+      <div 
+        className="md:hidden fixed left-0 right-0 z-50 transition-transform duration-75"
+        style={{ bottom: 0, transform: `translateY(-${keyboardHeight}px)` }}
+      >
+        <Toolbar
+          editor={editor}
+          onImageUpload={handleImageUpload}
+          onImageUrl={() => setIsImageDialogOpen(true)}
+          onAddLink={() => setIsLinkDialogOpen(true)}
+          onRemoveLink={unsetLink}
+          className="border-t border-b-0 border-subtle safe-area-bottom bg-surface-2"
+        />
+      </div>
 
       {/* Hidden file input for image upload */}
       <input

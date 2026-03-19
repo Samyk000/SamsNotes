@@ -169,7 +169,7 @@ export function TodoView({ content, onUpdate, saveState }: TodoViewProps) {
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto px-10 py-6 my-10 bg-background-surface-1/50 rounded-xl border border-border">
+    <div className="w-full px-10 py-6 my-6 bg-background-surface-1/50 rounded-xl border border-border">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-1">
