@@ -64,4 +64,4 @@ src/
 
 ## 📜 License
 
-Private - All rights reserved. Built for the developer community with ❤️.
+Private - All rights reserved. Built for the developer community with ❤️...
