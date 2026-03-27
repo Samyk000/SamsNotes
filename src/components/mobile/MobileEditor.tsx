@@ -198,6 +198,7 @@ export function MobileEditor() {
         {selectedNote.viewType === 'canvas' ? (
           <div className="flex-1 min-h-0 w-full relative">
             <WhiteboardView
+              key={selectedNoteId}
               content={selectedNote.content}
               onUpdate={handleContentUpdate}
               saveState={saveState}
@@ -205,12 +206,14 @@ export function MobileEditor() {
           </div>
         ) : selectedNote.viewType === 'todo' ? (
           <TodoView
+            key={selectedNoteId}
             content={selectedNote.content}
             onUpdate={handleContentUpdate}
             saveState={saveState}
           />
         ) : (
           <TipTapEditor
+            key={selectedNoteId}
             content={selectedNote.content}
             onUpdate={handleContentUpdate}
             saveState={saveState}

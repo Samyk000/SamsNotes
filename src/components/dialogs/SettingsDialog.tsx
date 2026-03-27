@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { useStore } from '@/lib/store';
 import { dataDB, getStorageUsage, settingsDB } from '@/lib/db';
 import { ExportData } from '@/types';
+import { safeValidateExportData } from '@/lib/schemas';
 import { format } from 'date-fns';
 import {
   X,
@@ -91,13 +92,20 @@ export function SettingsDialog({ isOpen, onClose }: SettingsDialogProps) {
       const text = await file.text();
       let data: ExportData;
       try {
-        data = JSON.parse(text);
-      } catch {
-        throw new Error('Invalid JSON file — make sure you are importing a SamsNotes backup');
-      }
-
-      if (!data.version || !Array.isArray(data.folders) || !Array.isArray(data.notes)) {
-        throw new Error('Invalid backup format — missing folders or notes');
+        const rawJson = JSON.parse(text);
+        const result = safeValidateExportData(rawJson);
+        if (!result.success) {
+          const firstIssue = result.error.issues[0];
+          throw new Error(
+            `Invalid backup format: ${firstIssue?.message ?? 'unknown validation error'}`
+          );
+        }
+        data = result.data as ExportData;
+      } catch (parseErr) {
+        if (parseErr instanceof SyntaxError) {
+          throw new Error('Invalid JSON file — make sure you are importing a SamsNotes backup');
+        }
+        throw parseErr;
       }
 
       const result = await dataDB.import(data, 'merge');

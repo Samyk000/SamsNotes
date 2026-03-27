@@ -401,11 +401,11 @@
 .tiptap p {
   color: var(--text-secondary);
   line-height: 1.7;
-  margin-bottom: 0.75em;
+  margin-bottom: 0.15em;
 }
 
 .tiptap strong {
-  color: var(--text-primary);
+  color: inherit;
   font-weight: 600;
 }
 

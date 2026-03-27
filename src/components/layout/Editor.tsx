@@ -276,18 +276,21 @@ export function Editor({ onMoveNote }: EditorProps) {
 
         {selectedNote.viewType === 'canvas' ? (
           <WhiteboardView
+            key={selectedNoteId}
             content={selectedNote.content}
             onUpdate={handleContentUpdate}
             saveState={saveState}
           />
         ) : selectedNote.viewType === 'todo' ? (
         <TodoView
+          key={selectedNoteId}
           content={selectedNote.content}
           onUpdate={handleContentUpdate}
           saveState={saveState}
         />
       ) : (
         <TipTapEditor
+          key={selectedNoteId}
           content={selectedNote.content}
           onUpdate={handleContentUpdate}
           saveState={saveState}
