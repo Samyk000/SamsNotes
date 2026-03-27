@@ -84,21 +84,21 @@ export function AppShell() {
     return <MobileLayout />;
   }
 
-  // Desktop 3-panel layout
+  // Desktop 3-panel Bento layout
   return (
-    <div className="h-screen flex bg-app overflow-hidden">
+    <div className="h-screen flex bg-app p-4 gap-4 overflow-hidden">
       {/* Panel 1 — Sidebar (240px) */}
-      <div className="w-60 shrink-0">
+      <div className="w-60 shrink-0 h-full rounded-2xl shadow-bento border border-subtle overflow-hidden bg-surface-1">
         <Sidebar onOpenSettings={() => setShowSettings(true)} />
       </div>
 
       {/* Panel 2 — Note list (280px) */}
-      <div className="w-[280px] shrink-0">
+      <div className="w-[280px] shrink-0 h-full rounded-2xl shadow-bento border border-subtle overflow-hidden bg-surface-1">
         <NoteList onMoveNote={(noteId) => setMoveNoteId(noteId)} />
       </div>
 
       {/* Panel 3 — Editor (flex, takes remaining space) */}
-      <div className="flex-1 min-w-0 h-full overflow-hidden">
+      <div className="flex-1 min-w-0 h-full rounded-2xl shadow-bento border border-subtle overflow-hidden bg-surface-1">
         <Editor
           onMoveNote={() => {
             const { selectedNoteId } = useStore.getState();

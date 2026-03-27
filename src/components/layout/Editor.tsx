@@ -132,7 +132,7 @@ export function Editor({ onMoveNote }: EditorProps) {
   if (!selectedNote) {
     return (
       <div className={cn(
-        'flex-1 flex flex-col bg-app h-full overflow-hidden'
+        'flex-1 flex flex-col bg-transparent h-full overflow-hidden'
       )}>
         <div className="flex-1 flex items-center justify-center">
           <EmptyState
@@ -151,9 +151,10 @@ export function Editor({ onMoveNote }: EditorProps) {
 
   return (
     <div className={cn(
-      'flex-1 flex flex-col bg-app h-full overflow-hidden'
-    )}>      {/* Header */}
-      <div className="px-5 md:px-10 py-3 md:py-6 border-b border-subtle shrink-0">
+      'flex-1 flex flex-col bg-transparent h-full overflow-hidden'
+    )}>
+      {/* Header */}
+      <div className="px-6 md:px-12 py-3 md:py-6 border-b border-subtle shrink-0">
         {/* Top row: Title + Tags (left) + Metadata (right) */}
         <div className="flex flex-wrap items-center justify-between gap-y-3 gap-x-4 w-full">
           
@@ -259,8 +260,8 @@ export function Editor({ onMoveNote }: EditorProps) {
 
       {/* Dynamic View System */}
       <div className={cn(
-        "flex-1 overflow-hidden flex flex-col min-h-0 bg-app",
-        isFullscreen ? "fixed inset-0 z-[9999]" : "relative"
+        "flex-1 overflow-hidden flex flex-col min-h-0 bg-transparent",
+        isFullscreen ? "fixed inset-0 z-[9999] bg-app" : "relative"
       )}>
         {isFullscreen && selectedNote.viewType === 'canvas' && (
           <div className="absolute top-4 right-4 z-[10001]">

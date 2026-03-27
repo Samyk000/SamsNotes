@@ -125,11 +125,11 @@ export function NoteCard({
       onMouseUp={handleTouchEnd}
       onMouseMove={handleTouchMove}
       className={cn(
-        'group relative p-3 rounded-lg cursor-pointer transition-all duration-100 select-none touch-none text-left',
-        'border shadow-[0_2px_8px_rgba(0,0,0,0.02)]',
+        'group relative p-4 rounded-xl cursor-pointer transition-all duration-200 ease-out select-none touch-none text-left',
+        'border',
         isActive 
-          ? 'bg-selected border-border-strong shadow-sm' 
-          : 'bg-surface-1 border-subtle/30 hover:bg-hover hover:border-subtle hover:shadow-[0_4px_12px_rgba(0,0,0,0.05)]'
+          ? 'bg-selected border-border-focus shadow-sm' 
+          : 'bg-surface-1 border-transparent hover:bg-hover hover:border-subtle/50 hover:shadow-bento'
       )}
     >
       {/* Title */}

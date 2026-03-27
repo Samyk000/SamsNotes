@@ -182,7 +182,7 @@ export function Sidebar({ onOpenSettings }: SidebarProps) {
     : 0;
 
   return (
-    <div className="flex flex-col h-full bg-surface-1 border-r border-subtle">
+    <div className="flex flex-col h-full bg-transparent text-primary-custom">
       {/* Logo */}
       <div className="h-[53px] px-4 border-b border-subtle flex items-center shrink-0">
         <Logo size="md" />

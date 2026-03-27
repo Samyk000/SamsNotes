@@ -64,8 +64,8 @@ function SortableTodoItem({
       style={style}
       className={cn(
         'group flex items-center gap-2 p-2 rounded-lg border border-transparent transition-colors',
-        'hover:bg-hover hover:border-border',
-        isDragging && 'opacity-50 z-50 bg-background-surface-1 shadow-lg ring-1 ring-border-focus'
+        'hover:bg-hover hover:border-subtle',
+        isDragging && 'opacity-50 z-50 bg-surface-2 shadow-bento ring-1 ring-border-focus'
       )}
     >
       <div
@@ -97,7 +97,7 @@ function SortableTodoItem({
       <button
         type="button"
         onClick={() => onDelete(item.id)}
-        className="p-1 opacity-0 group-hover:opacity-100 text-muted-custom hover:text-danger-custom transition-opacity"
+        className="p-1 opacity-0 group-hover:opacity-100 text-muted-custom hover:text-accent-error transition-opacity"
       >
         <X className="w-4 h-4" />
       </button>
@@ -169,7 +169,7 @@ export function TodoView({ content, onUpdate, saveState }: TodoViewProps) {
   };
 
   return (
-    <div className="w-full px-10 py-6 my-6 bg-background-surface-1/50 rounded-xl border border-border">
+    <div className="w-full px-6 md:px-12 py-6 my-6 bg-transparent">
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
         <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
           <div className="flex flex-col gap-1">

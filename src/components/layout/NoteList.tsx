@@ -117,7 +117,7 @@ export function NoteList({ onMoveNote }: NoteListProps) {
   const hasActiveFilter = filterBy !== 'all' || !!activeTagFilter;
 
   return (
-    <div className="flex flex-col h-full bg-surface-1 border-r border-subtle">
+    <div className="flex flex-col h-full bg-transparent text-primary-custom">
       {/* Header */}
       <div className="h-[53px] flex items-center justify-between px-4 border-b border-subtle shrink-0">
         <h2 className="text-sm font-semibold text-primary-custom truncate">

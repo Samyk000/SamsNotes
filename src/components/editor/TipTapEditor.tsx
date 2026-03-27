@@ -255,7 +255,7 @@ export function TipTapEditor({
 
       {/* Editor area */}
       <div className="flex-1 overflow-y-auto">
-        <div className="px-10 py-6 pb-24 md:pb-32">
+        <div className="px-6 md:px-12 py-6 pb-24 md:pb-32">
           <EditorContent editor={editor} />
         </div>
       </div>
